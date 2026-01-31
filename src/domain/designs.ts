@@ -17,6 +17,27 @@ export type DesignRun = {
   coded?: Record<number, number>;
 };
 
+function interleaveCenters<T>(runs: T[], centers: T[]): T[] {
+  if (centers.length === 0) return runs.slice();
+  const result: T[] = [];
+  let runIndex = 0;
+  for (let i = 0; i < centers.length; i += 1) {
+    const remainingCenters = centers.length - i;
+    const remainingRuns = runs.length - runIndex;
+    const take = Math.floor(remainingRuns / (remainingCenters + 1));
+    for (let j = 0; j < take; j += 1) {
+      result.push(runs[runIndex]);
+      runIndex += 1;
+    }
+    result.push(centers[i]);
+  }
+  while (runIndex < runs.length) {
+    result.push(runs[runIndex]);
+    runIndex += 1;
+  }
+  return result;
+}
+
 function cartesian<T>(sets: T[][]): T[][] {
   if (!sets.length) return [[]];
   return sets.reduce<T[][]>((acc, set) => {
@@ -116,7 +137,12 @@ export function buildBbdDesign(
     codedRuns.push(coded);
   }
 
-  const shuffled = seededShuffle(codedRuns, seed);
+  const isCenter = (coded: Record<number, number>) =>
+    usable.every((factor) => coded[factor.paramDefId] === 0);
+  const centers = codedRuns.filter(isCenter);
+  const nonCenters = codedRuns.filter((coded) => !isCenter(coded));
+  const shuffledNonCenters = seededShuffle(nonCenters, seed);
+  const shuffled = interleaveCenters(shuffledNonCenters, centers);
   const runs = shuffled.map((coded) => {
     const values: Record<number, number> = {};
     for (const factor of usable) {

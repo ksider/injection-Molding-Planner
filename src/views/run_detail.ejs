@@ -3,7 +3,7 @@
 <div class="container">
   <div class="card">
     <h1 class="card-title">Run <%= run.run_code %></h1>
-    <p class="small-note">Experiment: <%= experiment.name %></p>
+    <p class="small-note">Experiment: <%- formatInline(experiment.name) %></p>
     <div class="run-controls">
       <% if (prevId) { %>
         <a class="pure-button" href="/runs/<%= prevId %>">Prev</a>
@@ -17,7 +17,7 @@
 
   <% if (recipe) { %>
     <div class="card">
-      <h2 class="card-title">Recipe: <%= recipe.name %></h2>
+      <h2 class="card-title">Recipe: <%- formatInline(recipe.name) %></h2>
       <table class="pure-table table-compact">
         <thead>
           <tr>
@@ -28,7 +28,7 @@
         <tbody>
           <% components.forEach((component) => { %>
             <tr>
-              <td><%= component.component_name %></td>
+              <td><%- formatInline(component.component_name) %></td>
               <td><%= component.phr %></td>
             </tr>
           <% }); %>
@@ -43,7 +43,7 @@
       <div class="value-list">
         <% inputParams.forEach((param) => { const value = valueMap.get(param.id); %>
           <div class="value-row">
-            <div class="value-label"><%= param.label %> <span class="small-note"><%= param.unit || '' %></span></div>
+            <div class="value-label"><%- formatInline(param.label) %> <span class="small-note"><%- formatInline(param.unit || '') %></span></div>
             <div class="value-dots"></div>
             <div class="value-value">
               <% if (param.field_type === 'text') { %>
@@ -67,11 +67,11 @@
       <% } %>
       <% analysisGroups.forEach((group) => { %>
         <div class="output-group">
-          <div class="small-note"><strong><%= group.group %></strong></div>
+          <div class="small-note"><strong><%- formatInline(group.group) %></strong></div>
           <div class="outputs-grid">
             <% group.fields.forEach((field) => { const valueRow = analysisValueMap.get(field.id); %>
               <div class="<%= field.field_type === 'tag' ? 'output-card output-tags' : 'output-card' %>">
-                <label><%= field.label %> <span class="small-note"><%= field.unit || '' %></span></label>
+                <label><%- formatInline(field.label) %> <span class="small-note"><%- formatInline(field.unit || '') %></span></label>
                 <% if (field.field_type === 'tag') { %>
                   <% let selected = []; %>
                   <% if (valueRow?.value_tags_json) { try { const parsed = JSON.parse(valueRow.value_tags_json); if (Array.isArray(parsed)) selected = parsed.map(String); } catch {} } %>
@@ -80,7 +80,7 @@
                     <% field.allowedValues.forEach((tag) => { %>
                       <label class="tag-toggle">
                         <input type="checkbox" name="analysis_<%= field.id %>" value="<%= tag %>" <%= selected.includes(tag) ? 'checked' : '' %>>
-                        <span class="tag-chip"><%= tag %></span>
+                        <span class="tag-chip"><%- formatInline(tag) %></span>
                       </label>
                     <% }); %>
                   </div>

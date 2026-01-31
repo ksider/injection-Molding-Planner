@@ -638,6 +638,20 @@ export function createExperimentsRouter(db: Db) {
 
   router.post("/experiments/:id/generate", (req, res) => {
     const experimentId = Number(req.params.id);
+    const experiment = getExperiment(db, experimentId);
+    if (!experiment) return res.status(404).send("Experiment not found");
+    const inputParams = listParamDefinitionsByKind(db, experimentId, "INPUT");
+    const configs = listParamConfigs(db, experimentId);
+    const recipeIds = getExperimentRecipes(db, experimentId);
+    const runPreview = buildRunPreview(experiment, inputParams, configs, recipeIds);
+    if (experiment.design_type === "BBD" && runPreview.k < 3) {
+      const message =
+        runPreview.warning ||
+        `BBD needs at least 3 factors with 3 levels. Currently: ${runPreview.k}.`;
+      return res.redirect(
+        `/experiments/${experimentId}?tab=design&error=${encodeURIComponent(message)}`
+      );
+    }
     generateRuns(db, experimentId);
     res.redirect(`/experiments/${experimentId}?tab=runs`);
   });
@@ -817,10 +831,10 @@ function buildRunPreview(
     formula = `FFA: product(levels) = ${baseRuns}`;
   } else if (experiment.design_type === "BBD") {
     k = threeLevelFlags.filter(Boolean).length;
-    baseRuns = k >= 2 ? 4 * (k * (k - 1)) / 2 + (experiment.center_points || 0) : 0;
+    baseRuns = k >= 3 ? 4 * (k * (k - 1)) / 2 + (experiment.center_points || 0) : 0;
     formula = `BBD: 4*C(k,2)+center = ${baseRuns} (k=${k})`;
-    if (k < 2) {
-      warning = `BBD needs at least 2 factors with 3 levels. Currently: ${k}. Set Levels=3 or use LIST with 3 values.`;
+    if (k < 3) {
+      warning = `BBD needs at least 3 factors with 3 levels. Currently: ${k}. Set Levels=3 or use LIST with 3 values.`;
     }
   } else {
     const k = levelCounts.length;

@@ -2,7 +2,7 @@
 <%- include('partials/nav') %>
 <div class="container">
   <div class="card">
-    <h1 class="card-title"><%= experiment.name %></h1>
+    <h1 class="card-title"><%- formatInline(experiment.name) %></h1>
     <p class="small-note">Design: <%= experiment.design_type %> | Seed: <%= experiment.seed %></p>
     <div class="tabs">
       <a class="<%= tab === 'design' ? 'active' : '' %>" href="/experiments/<%= experiment.id %>?tab=design">Design</a>
@@ -35,9 +35,9 @@
           <% activeParams.forEach((param) => { const config = configMap.get(param.id); const groupKey = (param.group_label || 'General').toLowerCase().replace(/[^a-z0-9]+/g, '-'); const valuesText = config?.mode === 'RANGE' ? `${formatNumber(config?.range_min_real)} .. ${formatNumber(config?.range_max_real)}` : config?.mode === 'LIST' ? (config?.list_json ? JSON.parse(config.list_json).map((val) => formatNumber(val)).join(', ') : '-') : formatNumber(config?.fixed_value_real); %>
             <tr class="row-active group-row group-<%= groupKey %>" data-group-key="<%= groupKey %>">
               <td>
-                <%= param.label %>
+                <%- formatInline(param.label) %>
                 <% if (param.unit) { %>
-                  <span class="small-note">(<%= param.unit %>)</span>
+                  <span class="small-note">(<%- formatInline(param.unit) %>)</span>
                 <% } %>
               </td>
               <td><span class="badge"><%= config?.mode || 'FIXED' %></span></td>
@@ -88,7 +88,7 @@
               data-group-filter="<%= groupKey %>"
               data-group-label="<%= group %>"
             >
-              <%= group %>
+              <%- formatInline(group) %>
             </button>
           <% }); %>
         </div>
@@ -150,9 +150,9 @@
                     </label>
                   </td>
                   <td>
-                    <%= param.label %>
+                    <%- formatInline(param.label) %>
                     <% if (param.unit) { %>
-                      <span class="small-note">(<%= param.unit %>)</span>
+                      <span class="small-note">(<%- formatInline(param.unit) %>)</span>
                     <% } %>
                   </td>
                   <td class="mode-cell mode-<%= (config?.mode || 'FIXED').toLowerCase() %>">
@@ -572,7 +572,7 @@
             <th>Done</th>
             <th>Exclude</th>
             <% activeInputParams.forEach((param) => { %>
-              <th><%= param.label %> <span class="small-note"><%= param.unit || '' %></span></th>
+              <th><%- formatInline(param.label) %> <span class="small-note"><%- formatInline(param.unit || '') %></span></th>
             <% }); %>
           </tr>
         </thead>
@@ -583,7 +583,7 @@
           <% runRows.forEach((run) => { %>
             <tr class="<%= run.done ? 'run-done' : '' %> <%= run.exclude_from_analysis ? 'run-excluded' : '' %>">
               <td><a href="/runs/<%= run.id %>"><%= run.run_code %></a></td>
-              <td><%= run.recipe_id ? recipeMap.get(run.recipe_id) : '-' %></td>
+              <td><%- run.recipe_id ? formatInline(recipeMap.get(run.recipe_id)) : '-' %></td>
               <td><%= run.done ? 'Yes' : 'No' %></td>
               <td><%= run.exclude_from_analysis ? 'Yes' : 'No' %></td>
               <% activeInputParams.forEach((param) => { %>
@@ -982,11 +982,11 @@
             <label class="field-chip" data-standard-chip data-group-label="<%= field.group_label || 'Custom' %>">
               <input type="checkbox" name="standard_codes" value="<%= field.code %>" <%= field.is_active ? 'checked' : '' %>>
               <div class="field-content">
-                <div class="field-title"><%= field.label %></div>
+                <div class="field-title"><%- formatInline(field.label) %></div>
                 <div class="field-meta">
                   <%= field.field_type %>
-                  <% if (field.unit) { %> · <%= field.unit %><% } %>
-                  <% if (field.group_label) { %> · <%= field.group_label %><% } %>
+                  <% if (field.unit) { %> · <%- formatInline(field.unit) %><% } %>
+                  <% if (field.group_label) { %> · <%- formatInline(field.group_label) %><% } %>
                 </div>
               </div>
             </label>

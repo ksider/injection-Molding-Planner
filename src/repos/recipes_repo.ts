@@ -35,6 +35,10 @@ export function createRecipe(db: Db, name: string, description: string | null): 
   return Number(result.lastInsertRowid);
 }
 
+export function updateRecipe(db: Db, id: number, name: string, description: string | null) {
+  db.prepare("UPDATE recipes SET name = ?, description = ? WHERE id = ?").run(name, description ?? null, id);
+}
+
 export function replaceRecipeComponents(db: Db, recipeId: number, components: RecipeComponent[]) {
   const del = db.prepare("DELETE FROM recipe_components WHERE recipe_id = ?");
   const insert = db.prepare(
@@ -47,6 +51,10 @@ export function replaceRecipeComponents(db: Db, recipeId: number, components: Re
     }
   });
   tx();
+}
+
+export function deleteRecipe(db: Db, recipeId: number) {
+  db.prepare("DELETE FROM recipes WHERE id = ?").run(recipeId);
 }
 
 export function deleteAllRecipes(db: Db) {

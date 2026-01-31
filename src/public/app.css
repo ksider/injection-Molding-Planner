@@ -21,6 +21,22 @@ body {
   min-height: 100vh;
 }
 
+sup,
+sub {
+  font-size: 0.72em;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+sup {
+  top: -0.45em;
+}
+
+sub {
+  bottom: -0.2em;
+}
+
 .top-nav {
   display: flex;
   align-items: center;
@@ -133,6 +149,24 @@ body {
   gap: 0.5rem;
 }
 
+.recipe-import-text {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  max-width: 520px;
+}
+
+.recipe-import-text textarea {
+  width: 100%;
+  min-height: 140px;
+  padding: 0.6rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid #d8d2c5;
+  background: #fff;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+
 .recipe-search {
   min-width: 220px;
   padding: 0.45rem 0.75rem;
@@ -221,7 +255,22 @@ body {
 .recipe-comp-name {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+}
+
+.recipe-comp-name sub,
+.recipe-comp-name sup {
+  font-size: 0.75em;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+.recipe-comp-name sup {
+  top: -0.45em;
+}
+
+.recipe-comp-name sub {
+  top: 0.2em;
 }
 
 .recipe-comp-name::after {
@@ -229,6 +278,7 @@ body {
   flex: 1 1 auto;
   border-bottom: 1px dotted rgba(44, 44, 40, 0.35);
   transform: translateY(-2px);
+  margin-left: 8px;
 }
 
 .recipe-comp-qty {
@@ -239,6 +289,48 @@ body {
 .recipe-comp-more {
   font-size: 0.8rem;
   color: #6b6355;
+}
+
+.recipe-card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.icon-btn.icon-only {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+
+.material-symbols-rounded {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.inline-form {
+  margin: 0;
+}
+
+.recipe-edit-table input {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+
+.recipe-edit-actions {
+  margin-top: 0.6rem;
+  display: flex;
+  justify-content: flex-start;
 }
 
 .recipe-select-grid {

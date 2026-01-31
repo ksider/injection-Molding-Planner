@@ -64,16 +64,16 @@
               <label class="recipe-select-card" data-recipe-text="<%= dataText %>">
                 <input type="checkbox" name="recipe_ids" value="<%= recipe.id %>">
                 <div class="recipe-select-header">
-                  <div class="recipe-select-title"><%= recipe.name %></div>
+                  <div class="recipe-select-title"><%- formatInline(recipe.name) %></div>
                   <% if (recipe.description) { %>
-                    <div class="recipe-select-desc"><%= recipe.description %></div>
+                    <div class="recipe-select-desc"><%- formatInline(recipe.description) %></div>
                   <% } %>
                 </div>
                 <div class="recipe-components">
                   <% const comps = recipe.components || []; %>
                   <% comps.slice(0, 6).forEach((component) => { %>
                     <div class="recipe-comp-line">
-                      <span class="recipe-comp-name"><%= component.component_name %></span>
+                      <span class="recipe-comp-name"><%- formatInline(component.component_name) %></span>
                       <span class="recipe-comp-qty"><%= formatNumber(component.phr) %></span>
                     </div>
                   <% }); %>

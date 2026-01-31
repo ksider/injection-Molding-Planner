@@ -29,7 +29,7 @@
         <% experiments.forEach((exp) => { %>
           <tr>
             <td><%= exp.id %></td>
-            <td><a href="/experiments/<%= exp.id %>"><%= exp.name %></a></td>
+            <td><a href="/experiments/<%= exp.id %>"><%- formatInline(exp.name) %></a></td>
             <td><span class="badge"><%= exp.design_type %></span></td>
             <td><%= exp.seed %></td>
             <td><%= new Date(exp.created_at).toLocaleDateString() %></td>

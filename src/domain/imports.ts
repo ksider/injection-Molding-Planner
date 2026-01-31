@@ -53,6 +53,30 @@ export function parseRecipeMatrix(text: string): ImportedRecipe[] {
   return [];
 }
 
+export function parseRecipePlainText(text: string): ImportedRecipe[] {
+  const lines = text.split(/\r?\n/);
+  const trimmed = lines.map((line) => line.trim()).filter((line) => line.length > 0);
+  if (trimmed.length === 0) return [];
+
+  const name = trimmed[0];
+  const components: Array<{ name: string; phr: number }> = [];
+
+  for (const line of trimmed.slice(1)) {
+    const match = line.match(/^(.*?) {2,}(.+)$/);
+    if (!match) continue;
+    const component = normalizeCell(match[1]);
+    const raw = normalizeCell(match[2]);
+    if (!component || !raw) continue;
+    const normalized = raw.includes(",") && !raw.includes(".") ? raw.replace(",", ".") : raw;
+    const value = parseFloat(normalized);
+    if (!Number.isFinite(value) || value === 0) continue;
+    components.push({ name: component, phr: value });
+  }
+
+  if (components.length === 0) return [];
+  return [{ name, components }];
+}
+
 function buildRecipes(rows: string[][], phrColumns: number[], recipeNames: string[]): ImportedRecipe[] {
   const recipes = recipeNames.map((name) => ({ name, components: [] as Array<{ name: string; phr: number }> }));
   for (const row of rows) {

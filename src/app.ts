@@ -20,6 +20,27 @@ app.locals.formatNumber = (value: unknown, maxDecimals = 3) => {
   return fixed.replace(/\.?0+$/, "");
 };
 
+const htmlEscapes: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;"
+};
+
+function escapeHtml(value: unknown) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => htmlEscapes[char] ?? char);
+}
+
+app.locals.formatInline = (value: unknown) => {
+  const escaped = escapeHtml(value);
+  const withTags = escaped.replace(/&lt;(\/?)(sup|sub)&gt;/gi, "<$1$2>");
+  return withTags
+    .replace(/\s+(?=<(sup|sub)>)/gi, "")
+    .replace(/<(sup|sub)>\s+/gi, "<$1>")
+    .replace(/\s+<\/(sup|sub)>/gi, "</$1>");
+};
+
 const viewsPath = path.resolve(process.cwd(), "src", "views");
 const publicPath = path.resolve(process.cwd(), "src", "public");
 
