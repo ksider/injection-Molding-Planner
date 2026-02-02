@@ -7,6 +7,7 @@ export type Experiment = {
   seed: number;
   created_at: string;
   notes: string | null;
+  machine_id: number | null;
   center_points: number;
   max_runs: number;
   replicate_count: number;
@@ -35,13 +36,14 @@ export function updateExperiment(
   const next = { ...current, ...updates };
   db.prepare(
     `UPDATE experiments
-     SET name = ?, design_type = ?, seed = ?, notes = ?, center_points = ?, max_runs = ?, replicate_count = ?, recipe_as_block = ?
+     SET name = ?, design_type = ?, seed = ?, notes = ?, machine_id = ?, center_points = ?, max_runs = ?, replicate_count = ?, recipe_as_block = ?
      WHERE id = ?`
   ).run(
     next.name,
     next.design_type,
     next.seed,
     next.notes ?? null,
+    next.machine_id ?? null,
     next.center_points ?? 3,
     next.max_runs ?? 200,
     next.replicate_count ?? 1,
@@ -58,8 +60,8 @@ export function createExperiment(
   const result = db
     .prepare(
       `INSERT INTO experiments
-        (name, design_type, seed, created_at, notes, center_points, max_runs, replicate_count, recipe_as_block)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        (name, design_type, seed, created_at, notes, machine_id, center_points, max_runs, replicate_count, recipe_as_block)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       data.name,
@@ -67,6 +69,7 @@ export function createExperiment(
       data.seed,
       createdAt,
       data.notes ?? null,
+      data.machine_id ?? null,
       data.center_points ?? 3,
       data.max_runs ?? 200,
       data.replicate_count ?? 1,

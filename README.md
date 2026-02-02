@@ -30,6 +30,17 @@ The qualification flow includes 6 steps based on scientific molding methodology:
 Reference book (Amazon search):
 - Robust Process Development and Scientific Molding (Suhas Kulkarni): https://a.co/d/aDv52KL
 
+## Report Plan (Next Work)
+The current report plan lives at `report_plan` in the project root. That file is the source of truth
+for the upcoming HTML/PDF/CSV report work and should be reviewed first before coding.
+
+## Recent Changes (for handoff)
+- Machine library now supports parameter tokens in the format `%machineId:paramId%`.
+  These tokens can be used inside qualification setup inputs and custom fields.
+- UI shows live previews for tokenized values; inputs keep the token, summaries display the resolved value.
+- Step calculations resolve tokens at runtime (server + client), so values survive reloads.
+- Machine edit page shows a small read-only token field next to each parameter for quick copy.
+
 ## Supported Recipe Import Formats
 The importer accepts two common formats:
 

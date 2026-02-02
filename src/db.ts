@@ -32,6 +32,26 @@ function initDb(db: Db) {
       phr REAL NOT NULL,
       FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
     );
+    CREATE TABLE IF NOT EXISTS machines (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      image_url TEXT,
+      vendor TEXT,
+      model TEXT,
+      settings_json TEXT,
+      notes TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS machine_params (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      machine_id INTEGER NOT NULL,
+      code TEXT,
+      label TEXT NOT NULL,
+      unit TEXT,
+      value_text TEXT,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (machine_id) REFERENCES machines(id) ON DELETE CASCADE
+    );
     CREATE TABLE IF NOT EXISTS experiments (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -39,10 +59,12 @@ function initDb(db: Db) {
       seed INTEGER NOT NULL,
       created_at TEXT NOT NULL,
       notes TEXT,
+      machine_id INTEGER,
       center_points INTEGER DEFAULT 3,
       max_runs INTEGER DEFAULT 200,
       replicate_count INTEGER DEFAULT 1,
-      recipe_as_block INTEGER DEFAULT 0
+      recipe_as_block INTEGER DEFAULT 0,
+      FOREIGN KEY (machine_id) REFERENCES machines(id) ON DELETE SET NULL
     );
     CREATE TABLE IF NOT EXISTS experiment_recipes (
       experiment_id INTEGER NOT NULL,
@@ -218,7 +240,8 @@ function initDb(db: Db) {
     ["center_points", "ALTER TABLE experiments ADD COLUMN center_points INTEGER DEFAULT 3"],
     ["max_runs", "ALTER TABLE experiments ADD COLUMN max_runs INTEGER DEFAULT 200"],
     ["replicate_count", "ALTER TABLE experiments ADD COLUMN replicate_count INTEGER DEFAULT 1"],
-    ["recipe_as_block", "ALTER TABLE experiments ADD COLUMN recipe_as_block INTEGER DEFAULT 0"]
+    ["recipe_as_block", "ALTER TABLE experiments ADD COLUMN recipe_as_block INTEGER DEFAULT 0"],
+    ["machine_id", "ALTER TABLE experiments ADD COLUMN machine_id INTEGER"]
   ] as const;
   for (const [column, sql] of experimentColumns) {
     if (!hasColumn(db, "experiments", column)) {
@@ -407,6 +430,63 @@ function initDb(db: Db) {
         row.value_tags_json
       );
     }
+  }
+
+  const machineCount = db.prepare("SELECT COUNT(*) as count FROM machines").get() as { count: number };
+  if (machineCount.count === 0) {
+    const settings = {
+      clamp_force_kN: 1100,
+      clamp_force_t: 110,
+      tie_bar_distance_mm: "470 x 470",
+      platen_size_mm: "670 x 660",
+      opening_stroke_mm: 600,
+      min_mold_height_mm: 250,
+      max_mold_height_mm: 550,
+      screw_diameter_mm: "35 / 40 / 45",
+      injection_volume_cm3: "158 - 231",
+      injection_weight_g: "144 - 205",
+      injection_pressure_bar: 2020,
+      intensification_ratio: null,
+      screw_speed_rpm: 200,
+      plasticizing_rate_g_s: "20 - 25"
+    };
+    const createdAt = new Date().toISOString();
+    const result = db.prepare(
+      `INSERT INTO machines (name, image_url, vendor, model, settings_json, notes, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      "Demag Ergotech 110/470-310",
+      null,
+      "Demag",
+      "Ergotech 110/470-310",
+      JSON.stringify(settings),
+      null,
+      createdAt
+    );
+    const machineId = Number(result.lastInsertRowid);
+    const insertParam = db.prepare(
+      `INSERT INTO machine_params (machine_id, code, label, unit, value_text, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    );
+    const params: Array<{ code: string; label: string; unit: string | null; value: string }> = [
+      { code: "clamp_force_kN", label: "Clamp force", unit: "kN", value: "1100" },
+      { code: "clamp_force_t", label: "Clamp force", unit: "t", value: "110" },
+      { code: "tie_bar_distance_mm", label: "Tie bar distance", unit: "mm", value: "470 x 470" },
+      { code: "platen_size_mm", label: "Platen size", unit: "mm", value: "670 x 660" },
+      { code: "opening_stroke_mm", label: "Opening stroke", unit: "mm", value: "600" },
+      { code: "min_mold_height_mm", label: "Min mold height", unit: "mm", value: "250" },
+      { code: "max_mold_height_mm", label: "Max mold height", unit: "mm", value: "550" },
+      { code: "screw_diameter_mm", label: "Screw diameter", unit: "mm", value: "35 / 40 / 45" },
+      { code: "injection_volume_cm3", label: "Injection volume", unit: "cm3", value: "158 - 231" },
+      { code: "injection_weight_g", label: "Injection weight", unit: "g", value: "144 - 205" },
+      { code: "injection_pressure_bar", label: "Injection pressure", unit: "bar", value: "2020" },
+      { code: "intensification_ratio", label: "Intensification ratio", unit: null, value: "" },
+      { code: "screw_speed_rpm", label: "Screw speed", unit: "rpm", value: "200" },
+      { code: "plasticizing_rate_g_s", label: "Plasticizing rate", unit: "g/s", value: "20 - 25" }
+    ];
+    params.forEach((param) => {
+      insertParam.run(machineId, param.code, param.label, param.unit, param.value, createdAt);
+    });
   }
 
   // DOE migration: create default DOE per experiment and attach existing DOE data.

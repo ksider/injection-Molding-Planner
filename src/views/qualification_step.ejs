@@ -29,11 +29,17 @@
       <div class="setup-summary">
         <div>
           <div class="small-note">Intensification coefficient</div>
-          <div class="setup-value"><%= settings.intensification_coeff ?? 1 %> <span class="small-note"><%= unitByCode.intensification_coeff || '' %></span></div>
+          <div class="setup-value">
+            <span data-template-output data-template-source="rheoIntCoeff" data-template-fallback="1"><%= settings.intensification_coeff ?? machineIntensification ?? 1 %></span>
+            <span class="small-note"><%= unitByCode.intensification_coeff || '' %></span>
+          </div>
         </div>
         <div>
           <div class="small-note">Melt temperature</div>
-          <div class="setup-value"><%= settings.melt_temp_c ?? '-' %> <span class="small-note"><%= unitByCode.melt_temp || '' %></span></div>
+          <div class="setup-value">
+            <span data-template-output data-template-source="rheoMeltTemp" data-template-fallback="-"><%= settings.melt_temp_c ?? '-' %></span>
+            <span class="small-note"><%= unitByCode.melt_temp || '' %></span>
+          </div>
         </div>
         <% if (settings.custom_fields && settings.custom_fields.length) { %>
           <% settings.custom_fields.forEach((field) => { %>
@@ -315,11 +321,13 @@
         <div class="grid-two">
           <div>
             <label>Injection speed</label>
-            <input type="number" step="any" id="cavityInjSpeed" value="<%= settings.inj_speed ?? step1Recommended ?? '' %>">
+            <input type="text" id="cavityInjSpeed" data-template-input value="<%= settings.inj_speed ?? step1Recommended ?? '' %>">
+            <div class="template-preview" data-template-preview></div>
           </div>
           <div>
             <label>Target weight (g)</label>
-            <input type="number" step="any" id="cavityTargetWeight" value="<%= settings.target_weight_g ?? '' %>">
+            <input type="text" id="cavityTargetWeight" data-template-input value="<%= settings.target_weight_g ?? '' %>">
+            <div class="template-preview" data-template-preview></div>
           </div>
         </div>
       </div>
@@ -344,7 +352,7 @@
         </div>
         <div>
           <div class="small-note">Machine max pressure</div>
-          <div class="setup-value"><span id="pressureMaxValue"><%= settings.machine_max_pressure_bar ?? '-' %></span> <span class="small-note">bar</span></div>
+          <div class="setup-value"><span id="pressureMaxValue"><%= settings.machine_max_pressure_bar ?? machineInjectionPressure ?? '-' %></span> <span class="small-note">bar</span></div>
         </div>
         <div>
           <div class="small-note">Intensification</div>
@@ -477,15 +485,18 @@
         <div class="grid-two">
           <div>
             <label>Injection speed</label>
-            <input type="number" step="any" id="pressureInjSpeed" value="<%= settings.inj_speed ?? step1Recommended ?? '' %>">
+            <input type="text" id="pressureInjSpeed" data-template-input value="<%= settings.inj_speed ?? step1Recommended ?? '' %>">
+            <div class="template-preview" data-template-preview></div>
           </div>
           <div>
             <label>Machine max pressure (bar)</label>
-            <input type="number" step="any" id="pressureMachineMax" value="<%= settings.machine_max_pressure_bar ?? '' %>">
+            <input type="text" id="pressureMachineMax" data-template-input value="<%= settings.machine_max_pressure_bar ?? machineInjectionPressure ?? '' %>">
+            <div class="template-preview" data-template-preview></div>
           </div>
           <div>
             <label>Intensification coeff</label>
-            <input type="number" step="any" id="pressureIntCoeff" value="<%= settings.intensification_coeff ?? 1 %>">
+            <input type="text" id="pressureIntCoeff" data-template-input value="<%= settings.intensification_coeff ?? 1 %>">
+            <div class="template-preview" data-template-preview></div>
           </div>
         </div>
       </div>
@@ -635,7 +646,8 @@
         <div class="grid-two">
           <div>
             <label>Injection speed</label>
-            <input type="number" step="any" id="cpwInjSpeed" value="<%= settings.inj_speed ?? step1Recommended ?? '' %>">
+            <input type="text" id="cpwInjSpeed" data-template-input value="<%= settings.inj_speed ?? step1Recommended ?? '' %>">
+            <div class="template-preview" data-template-preview></div>
           </div>
         </div>
         <fieldset class="card" style="margin-top: 1rem;">
@@ -643,11 +655,13 @@
           <div class="grid-two">
             <div>
               <label>Temperature range (°C)</label>
-              <input type="text" id="cpwTempRange" placeholder="min, max" value="<%= (settings.cpw_temp_low_c != null || settings.cpw_temp_high_c != null) ? `${settings.cpw_temp_low_c ?? ''}, ${settings.cpw_temp_high_c ?? ''}` : '' %>">
+              <input type="text" id="cpwTempRange" data-template-input placeholder="min, max" value="<%= (settings.cpw_temp_low_c != null || settings.cpw_temp_high_c != null) ? `${settings.cpw_temp_low_c ?? ''}, ${settings.cpw_temp_high_c ?? ''}` : '' %>">
+              <div class="template-preview" data-template-preview></div>
             </div>
             <div>
               <label>Hold pressure range (bar)</label>
-              <input type="text" id="cpwHoldRange" placeholder="min, max" value="<%= (settings.cpw_hold_low_bar != null || settings.cpw_hold_high_bar != null) ? `${settings.cpw_hold_low_bar ?? ''}, ${settings.cpw_hold_high_bar ?? ''}` : '' %>">
+              <input type="text" id="cpwHoldRange" data-template-input placeholder="min, max" value="<%= (settings.cpw_hold_low_bar != null || settings.cpw_hold_high_bar != null) ? `${settings.cpw_hold_low_bar ?? ''}, ${settings.cpw_hold_high_bar ?? ''}` : '' %>">
+              <div class="template-preview" data-template-preview></div>
             </div>
             <div>
               <label>Generate mode</label>
@@ -659,11 +673,13 @@
             </div>
             <div>
               <label>Temp step (°C)</label>
-              <input type="number" step="any" id="cpwTempStep" value="<%= settings.cpw_temp_step_c ?? '' %>">
+              <input type="text" id="cpwTempStep" data-template-input value="<%= settings.cpw_temp_step_c ?? '' %>">
+              <div class="template-preview" data-template-preview></div>
             </div>
             <div>
               <label>Pressure step (bar)</label>
-              <input type="number" step="any" id="cpwHoldStep" value="<%= settings.cpw_hold_step_bar ?? '' %>">
+              <input type="text" id="cpwHoldStep" data-template-input value="<%= settings.cpw_hold_step_bar ?? '' %>">
+              <div class="template-preview" data-template-preview></div>
             </div>
           </div>
           <div style="margin-top: 0.5rem;">
@@ -815,7 +831,8 @@
         <div class="grid-two">
           <div>
             <label>Injection speed</label>
-            <input type="number" step="any" id="gateSealInjSpeed" value="<%= settings.inj_speed ?? step1Recommended ?? '' %>">
+            <input type="text" id="gateSealInjSpeed" data-template-input value="<%= settings.inj_speed ?? step1Recommended ?? '' %>">
+            <div class="template-preview" data-template-preview></div>
           </div>
         </div>
       </div>
@@ -1312,11 +1329,13 @@
     <div class="grid-two">
       <div>
         <label>Intensification coefficient <span class="small-note"><%= unitByCode.intensification_coeff || '' %></span></label>
-        <input type="number" step="any" id="rheoIntCoeff" value="<%= settings.intensification_coeff ?? 1 %>">
-      </div>
+            <input type="text" id="rheoIntCoeff" data-template-input value="<%= settings.intensification_coeff ?? machineIntensification ?? 1 %>">
+            <div class="template-preview" data-template-preview></div>
+          </div>
       <div>
         <label>Melt temperature <span class="small-note"><%= unitByCode.melt_temp || '' %></span></label>
-        <input type="number" step="any" id="rheoMeltTemp" value="<%= settings.melt_temp_c ?? '' %>">
+        <input type="text" id="rheoMeltTemp" data-template-input value="<%= settings.melt_temp_c ?? '' %>">
+        <div class="template-preview" data-template-preview></div>
       </div>
     </div>
     <div class="field-toolbar">
@@ -1338,7 +1357,8 @@
         <div class="setup-field-row" data-custom-field data-field-id="<%= field.id %>">
           <input type="text" data-custom-label value="<%- formatInline(field.label) %>" placeholder="Label">
           <input type="text" data-custom-unit value="<%- formatInline(field.unit || '') %>" placeholder="Unit">
-          <input type="number" step="any" data-custom-value value="<%= field.value ?? '' %>" placeholder="Value">
+          <input type="text" data-custom-value data-template-input value="<%- formatInline(field.value ?? '') %>" placeholder="Value">
+          <div class="template-preview" data-template-preview></div>
           <button class="icon-button danger" type="button" data-remove-field title="Remove">
             <span class="material-symbols-rounded" aria-hidden="true">delete</span>
           </button>
@@ -1358,6 +1378,26 @@
   const dialog = document.getElementById('qualFieldDialog');
   const rheoSetupDialog = document.getElementById('rheoSetupDialog');
   const openBtn = document.getElementById('openQualFields');
+  const machineParamMap = <%- JSON.stringify(machineParamMap || {}) %>;
+  // Template tokens (%machineId:paramId%) are resolved in UI summaries while inputs keep the token.
+  const applyTemplateMap = () => {
+    window.IMPlanner?.setTemplateMap(machineParamMap);
+    document.dispatchEvent(new Event('templateMapReady'));
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyTemplateMap);
+  } else {
+    applyTemplateMap();
+  }
+  const resolveTemplateValue = (value) => {
+    const raw = String(value ?? '');
+    if (/%\d+:\d+%/.test(raw) && window.IMPlanner?.resolveTemplate) {
+      const result = window.IMPlanner.resolveTemplate(raw);
+      if (result?.missing?.length) return raw;
+      return result?.resolved ?? raw;
+    }
+    return raw;
+  };
   const showDialog = (dlg) => {
     if (!dlg) return;
     if (typeof dlg.showModal === 'function') {
@@ -1368,11 +1408,11 @@
   };
   const parseRange = (value) => {
     if (value == null) return { min: null, max: null };
-    const text = String(value).trim();
+    const text = resolveTemplateValue(value).trim();
     if (!text) return { min: null, max: null };
     const parseNum = (val) => {
       if (val == null) return NaN;
-      const raw = String(val).trim();
+      const raw = resolveTemplateValue(val).trim();
       if (!raw) return NaN;
       return parseFloat(raw.replace(',', '.'));
     };
@@ -1906,7 +1946,7 @@
 
     const parseNum = (value) => {
       if (value == null) return NaN;
-      const text = String(value).trim();
+      const text = resolveTemplateValue(value).trim();
       if (!text) return NaN;
       return parseFloat(text.replace(',', '.'));
     };
@@ -1932,8 +1972,8 @@
         const settings = getSettings();
         const customFields = fieldManager ? fieldManager.collect() : [];
         const payload = new URLSearchParams();
-        payload.append('intensification_coeff', settings.intensification_coeff);
-        payload.append('melt_temp_c', settings.melt_temp_c ?? '');
+        payload.append('intensification_coeff', intCoeffInput?.value ?? '');
+        payload.append('melt_temp_c', meltTempInput?.value ?? '');
         payload.append('recommended_inj_speed', recommendedInput?.value ?? '');
         payload.append('custom_fields_json', JSON.stringify(customFields));
         await fetch(`/experiments/<%= experimentId %>/qualification/<%= step.step_number %>/settings`, {
@@ -1954,6 +1994,12 @@
     intCoeffInput?.addEventListener('input', saveSettings);
     meltTempInput?.addEventListener('input', saveSettings);
     recommendedInput?.addEventListener('input', saveSettings);
+    document.addEventListener('templateMapReady', () => {
+      updateDerivedAndChart();
+      window.IMPlanner?.updateTemplateOutputs?.(document);
+    });
+    intCoeffInput?.addEventListener('input', () => window.IMPlanner?.updateTemplateOutputs?.(document));
+    meltTempInput?.addEventListener('input', () => window.IMPlanner?.updateTemplateOutputs?.(document));
     addCustomBtn?.addEventListener('click', () => {
       fieldManager?.addRow();
     });
@@ -2369,7 +2415,7 @@
 
     const parseNum = (value) => {
       if (value == null) return NaN;
-      const text = String(value).trim();
+      const text = resolveTemplateValue(value).trim();
       if (!text) return NaN;
       return parseFloat(text.replace(',', '.'));
     };
@@ -2407,10 +2453,12 @@
           body: payload
         });
         if (injSpeedValueEl) {
-          injSpeedValueEl.textContent = cavityInjSpeedInput?.value?.trim() || '-';
+          const display = resolveTemplateValue(cavityInjSpeedInput?.value ?? '').trim();
+          injSpeedValueEl.textContent = display || '-';
         }
         if (targetWeightValueEl) {
-          targetWeightValueEl.textContent = cavityTargetWeightInput?.value?.trim() || '-';
+          const display = resolveTemplateValue(cavityTargetWeightInput?.value ?? '').trim();
+          targetWeightValueEl.textContent = display || '-';
         }
         if (cavitySetupStatus) cavitySetupStatus.textContent = 'Saved';
         updateCavityDerived();
@@ -2419,6 +2467,25 @@
 
     cavityInjSpeedInput?.addEventListener('input', saveCavitySettings);
     cavityTargetWeightInput?.addEventListener('input', saveCavitySettings);
+    if (injSpeedValueEl) {
+      const display = resolveTemplateValue(cavityInjSpeedInput?.value ?? '').trim();
+      injSpeedValueEl.textContent = display || '-';
+    }
+    if (targetWeightValueEl) {
+      const display = resolveTemplateValue(cavityTargetWeightInput?.value ?? '').trim();
+      targetWeightValueEl.textContent = display || '-';
+    }
+    document.addEventListener('templateMapReady', () => {
+      if (injSpeedValueEl) {
+        const display = resolveTemplateValue(cavityInjSpeedInput?.value ?? '').trim();
+        injSpeedValueEl.textContent = display || '-';
+      }
+      if (targetWeightValueEl) {
+        const display = resolveTemplateValue(cavityTargetWeightInput?.value ?? '').trim();
+        targetWeightValueEl.textContent = display || '-';
+      }
+      updateCavityDerived();
+    });
 
     const variationValueEl = document.getElementById('cavityVariationValue');
 
@@ -2702,7 +2769,7 @@
 
     const parseNum = (value) => {
       if (value == null) return NaN;
-      const text = String(value).trim();
+      const text = resolveTemplateValue(value).trim();
       if (!text) return NaN;
       return parseFloat(text.replace(',', '.'));
     };
@@ -2712,6 +2779,15 @@
       if (!Number.isFinite(num)) return '-';
       const rounded = Math.round(num * 100) / 100;
       return rounded.toFixed(2).replace(/\.?0+$/, '');
+    };
+
+    const updatePressureSummary = () => {
+      const injDisplay = resolveTemplateValue(pressureInjSpeedInput?.value ?? '').trim();
+      const maxDisplay = resolveTemplateValue(pressureMachineMaxInput?.value ?? '').trim();
+      const intDisplay = resolveTemplateValue(pressureIntCoeffInput?.value ?? '').trim();
+      if (pressureInjSpeedValue) pressureInjSpeedValue.textContent = injDisplay || '-';
+      if (pressureMaxValue) pressureMaxValue.textContent = maxDisplay || '-';
+      if (pressureIntValue) pressureIntValue.textContent = intDisplay || '1';
     };
 
     let setupTimer = null;
@@ -2728,9 +2804,7 @@
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: payload
         });
-        if (pressureInjSpeedValue) pressureInjSpeedValue.textContent = pressureInjSpeedInput?.value?.trim() || '-';
-        if (pressureMaxValue) pressureMaxValue.textContent = pressureMachineMaxInput?.value?.trim() || '-';
-        if (pressureIntValue) pressureIntValue.textContent = pressureIntCoeffInput?.value?.trim() || '1';
+        updatePressureSummary();
         if (pressureSetupStatus) pressureSetupStatus.textContent = 'Saved';
         updatePressureChart();
       }, 350);
@@ -2739,6 +2813,11 @@
     pressureInjSpeedInput?.addEventListener('input', savePressureSettings);
     pressureMachineMaxInput?.addEventListener('input', savePressureSettings);
     pressureIntCoeffInput?.addEventListener('input', savePressureSettings);
+    if (pressureInjSpeedValue || pressureMaxValue || pressureIntValue) updatePressureSummary();
+    document.addEventListener('templateMapReady', () => {
+      updatePressureSummary();
+      updatePressureChart();
+    });
 
     const ensurePressureRun = async () => {
       if (pressureRunId) return pressureRunId;
@@ -2960,7 +3039,7 @@
 
     const parseNum = (value) => {
       if (value == null) return NaN;
-      const text = String(value).trim();
+      const text = resolveTemplateValue(value).trim();
       if (!text) return NaN;
       return parseFloat(text.replace(',', '.'));
     };
@@ -2987,7 +3066,8 @@
           body: payload
         });
         if (cpwInjSpeedValue) {
-          cpwInjSpeedValue.textContent = cpwInjSpeedInput?.value?.trim() || '-';
+          const display = resolveTemplateValue(cpwInjSpeedInput?.value ?? '').trim();
+          cpwInjSpeedValue.textContent = display || '-';
         }
         if (cpwSetupStatus) cpwSetupStatus.textContent = 'Saved';
       }, 350);
@@ -2999,6 +3079,17 @@
     cpwGenModeInput?.addEventListener('change', saveCpwSettings);
     cpwTempStepInput?.addEventListener('input', saveCpwSettings);
     cpwHoldStepInput?.addEventListener('input', saveCpwSettings);
+    if (cpwInjSpeedValue) {
+      const display = resolveTemplateValue(cpwInjSpeedInput?.value ?? '').trim();
+      cpwInjSpeedValue.textContent = display || '-';
+    }
+    document.addEventListener('templateMapReady', () => {
+      if (cpwInjSpeedValue) {
+        const display = resolveTemplateValue(cpwInjSpeedInput?.value ?? '').trim();
+        cpwInjSpeedValue.textContent = display || '-';
+      }
+      updateCpwChart();
+    });
 
     const saveRunValue = async (runId, fieldId, value) => {
       const payload = new URLSearchParams();
@@ -3400,17 +3491,28 @@
           body: payload
         });
         if (gateSealInjSpeedValue) {
-          gateSealInjSpeedValue.textContent = gateSealInjSpeedInput?.value?.trim() || '-';
+          const display = resolveTemplateValue(gateSealInjSpeedInput?.value ?? '').trim();
+          gateSealInjSpeedValue.textContent = display || '-';
         }
         if (gateSealSetupStatus) gateSealSetupStatus.textContent = 'Saved';
       }, 350);
     };
 
     gateSealInjSpeedInput?.addEventListener('input', saveGateSealSettings);
+    if (gateSealInjSpeedValue) {
+      const display = resolveTemplateValue(gateSealInjSpeedInput?.value ?? '').trim();
+      gateSealInjSpeedValue.textContent = display || '-';
+    }
+    document.addEventListener('templateMapReady', () => {
+      if (gateSealInjSpeedValue) {
+        const display = resolveTemplateValue(gateSealInjSpeedInput?.value ?? '').trim();
+        gateSealInjSpeedValue.textContent = display || '-';
+      }
+    });
 
     const parseNum = (value) => {
       if (value == null) return NaN;
-      const text = String(value).trim();
+      const text = resolveTemplateValue(value).trim();
       if (!text) return NaN;
       return parseFloat(text.replace(',', '.'));
     };
@@ -3648,7 +3750,7 @@
 
     const parseNum = (value) => {
       if (value == null) return NaN;
-      const text = String(value).trim();
+      const text = resolveTemplateValue(value).trim();
       if (!text) return NaN;
       return parseFloat(text.replace(',', '.'));
     };

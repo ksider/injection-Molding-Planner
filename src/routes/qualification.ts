@@ -25,6 +25,7 @@ import {
   updateQualField,
   updateQualRunFlags
 } from "../repos/qual_repo.js";
+import { getExperiment } from "../repos/experiments_repo.js";
 import {
   createParamDefinition,
   deleteParamDefinition,
@@ -32,6 +33,8 @@ import {
   listGlobalParamDefinitions,
   updateParamDefinition
 } from "../repos/params_repo.js";
+import { getMachine } from "../repos/machines_repo.js";
+import { listMachineParams } from "../repos/machine_params_repo.js";
 
 export function createQualificationRouter(db: Db) {
   const router = express.Router();
@@ -56,6 +59,8 @@ export function createQualificationRouter(db: Db) {
     const experimentId = Number(req.params.id);
     const stepNumber = Number(req.params.step);
     ensureQualificationDefaults(db, experimentId);
+    const experiment = getExperiment(db, experimentId);
+    if (!experiment) return res.status(404).send("Experiment not found");
     const step = getQualStep(db, experimentId, stepNumber);
     if (!step) return res.status(404).send("Step not found");
     const fields = listQualFields(db, step.id);
@@ -79,13 +84,13 @@ export function createQualificationRouter(db: Db) {
     }
     const settingsJson = getQualStepSettings(db, experimentId, stepNumber);
     let settings = {
-      intensification_coeff: 1,
-      melt_temp_c: null as number | null,
-      recommended_inj_speed: null as number | null,
-      inj_speed: null as number | null,
-      target_weight_g: null as number | null,
-      machine_max_pressure_bar: null as number | null,
-      custom_fields: [] as Array<{ id: string; code?: string; label: string; unit?: string; value?: number | null }>
+      intensification_coeff: 1 as number | string,
+      melt_temp_c: null as number | string | null,
+      recommended_inj_speed: null as number | string | null,
+      inj_speed: null as number | string | null,
+      target_weight_g: null as number | string | null,
+      machine_max_pressure_bar: null as number | string | null,
+      custom_fields: [] as Array<{ id: string; code?: string; label: string; unit?: string; value?: number | string | null }>
     };
     if (settingsJson) {
       try {
@@ -142,6 +147,31 @@ export function createQualificationRouter(db: Db) {
       }
     }
 
+    let machineInjectionPressure = null as number | null;
+    let machineParamMap: Record<string, string> = {};
+    let machineIntensification = null as number | null;
+    if (experiment.machine_id) {
+      const machine = getMachine(db, experiment.machine_id);
+      if (machine?.settings_json) {
+        try {
+          const parsed = JSON.parse(machine.settings_json);
+          if (Number.isFinite(parsed?.injection_pressure_bar)) {
+            machineInjectionPressure = Number(parsed.injection_pressure_bar);
+          }
+          if (Number.isFinite(parsed?.intensification_ratio)) {
+            machineIntensification = Number(parsed.intensification_ratio);
+          }
+        } catch {
+          machineInjectionPressure = null;
+          machineIntensification = null;
+        }
+      }
+      const params = listMachineParams(db, experiment.machine_id);
+      machineParamMap = Object.fromEntries(
+        params.map((param) => [`${experiment.machine_id}:${param.id}`, param.value_text ?? ""])
+      );
+    }
+
     res.render("qualification_step", {
       experimentId,
       step,
@@ -156,6 +186,9 @@ export function createQualificationRouter(db: Db) {
       step4CenterTemp,
       step4CenterPressure,
       step5GateSealTime,
+      machineInjectionPressure,
+      machineIntensification,
+      machineParamMap,
       summaryJson: summaryRow?.summary_json ?? null
     });
   });
@@ -748,7 +781,7 @@ export function createQualificationRouter(db: Db) {
     const stepNumber = Number(req.params.step);
     const step = getQualStep(db, experimentId, stepNumber);
     if (!step) return res.status(404).json({ error: "Step not found" });
-    let customFields: Array<{ id: string; code?: string; label: string; unit?: string; value?: number | null }> = [];
+    let customFields: Array<{ id: string; code?: string; label: string; unit?: string; value?: number | string | null }> = [];
     if (req.body.custom_fields_json) {
       try {
         const parsed = JSON.parse(String(req.body.custom_fields_json));
@@ -759,10 +792,14 @@ export function createQualificationRouter(db: Db) {
               code: item.code ? String(item.code) : undefined,
               label: String(item.label || ""),
               unit: item.unit ? String(item.unit) : undefined,
-              value:
-                item.value == null || item.value === ""
-                  ? null
-                  : Number(item.value)
+              value: (() => {
+                if (item.value == null || item.value === "") return null;
+                const raw = String(item.value).trim();
+                if (!raw) return null;
+                if (/%\d+:\d+%/.test(raw)) return raw;
+                const num = Number(raw);
+                return Number.isFinite(num) ? num : raw;
+              })()
             }))
             .filter((item) => item.id && item.label);
         }
@@ -770,53 +807,30 @@ export function createQualificationRouter(db: Db) {
         customFields = [];
       }
     }
+    const parseSettingValue = (value: unknown) => {
+      if (value == null || value === "") return null;
+      const raw = String(value).trim();
+      if (!raw) return null;
+      if (/%\d+:\d+%/.test(raw)) return raw;
+      const normalized = raw.includes(",") && !raw.includes(".") ? raw.replace(",", ".") : raw;
+      const num = Number(normalized);
+      return Number.isFinite(num) ? num : raw;
+    };
+    const intensificationValue = parseSettingValue(req.body.intensification_coeff);
     const settings = {
-      intensification_coeff: Number(req.body.intensification_coeff || 1),
-      melt_temp_c:
-        req.body.melt_temp_c === "" || req.body.melt_temp_c == null
-          ? null
-          : Number(req.body.melt_temp_c),
-      recommended_inj_speed:
-        req.body.recommended_inj_speed === "" || req.body.recommended_inj_speed == null
-          ? null
-          : Number(req.body.recommended_inj_speed),
-      inj_speed:
-        req.body.inj_speed === "" || req.body.inj_speed == null
-          ? null
-          : Number(req.body.inj_speed),
-      target_weight_g:
-        req.body.target_weight_g === "" || req.body.target_weight_g == null
-          ? null
-          : Number(req.body.target_weight_g),
-      machine_max_pressure_bar:
-        req.body.machine_max_pressure_bar === "" || req.body.machine_max_pressure_bar == null
-          ? null
-          : Number(req.body.machine_max_pressure_bar),
-      cpw_temp_low_c:
-        req.body.cpw_temp_low_c === "" || req.body.cpw_temp_low_c == null
-          ? null
-          : Number(req.body.cpw_temp_low_c),
-      cpw_temp_high_c:
-        req.body.cpw_temp_high_c === "" || req.body.cpw_temp_high_c == null
-          ? null
-          : Number(req.body.cpw_temp_high_c),
-      cpw_hold_low_bar:
-        req.body.cpw_hold_low_bar === "" || req.body.cpw_hold_low_bar == null
-          ? null
-          : Number(req.body.cpw_hold_low_bar),
-      cpw_hold_high_bar:
-        req.body.cpw_hold_high_bar === "" || req.body.cpw_hold_high_bar == null
-          ? null
-          : Number(req.body.cpw_hold_high_bar),
+      intensification_coeff: intensificationValue == null ? 1 : intensificationValue,
+      melt_temp_c: parseSettingValue(req.body.melt_temp_c),
+      recommended_inj_speed: parseSettingValue(req.body.recommended_inj_speed),
+      inj_speed: parseSettingValue(req.body.inj_speed),
+      target_weight_g: parseSettingValue(req.body.target_weight_g),
+      machine_max_pressure_bar: parseSettingValue(req.body.machine_max_pressure_bar),
+      cpw_temp_low_c: parseSettingValue(req.body.cpw_temp_low_c),
+      cpw_temp_high_c: parseSettingValue(req.body.cpw_temp_high_c),
+      cpw_hold_low_bar: parseSettingValue(req.body.cpw_hold_low_bar),
+      cpw_hold_high_bar: parseSettingValue(req.body.cpw_hold_high_bar),
       cpw_gen_mode: req.body.cpw_gen_mode ? String(req.body.cpw_gen_mode) : null,
-      cpw_temp_step_c:
-        req.body.cpw_temp_step_c === "" || req.body.cpw_temp_step_c == null
-          ? null
-          : Number(req.body.cpw_temp_step_c),
-      cpw_hold_step_bar:
-        req.body.cpw_hold_step_bar === "" || req.body.cpw_hold_step_bar == null
-          ? null
-          : Number(req.body.cpw_hold_step_bar),
+      cpw_temp_step_c: parseSettingValue(req.body.cpw_temp_step_c),
+      cpw_hold_step_bar: parseSettingValue(req.body.cpw_hold_step_bar),
       custom_fields: customFields
     };
     upsertQualStepSettings(db, experimentId, stepNumber, JSON.stringify(settings));

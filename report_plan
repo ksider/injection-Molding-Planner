@@ -1,0 +1,73 @@
+Отлично, понял требования. Ниже обновлённый план с учётом пожеланий.
+
+1) Конфигурация отчёта (галки включения секций)
+
+В генераторе отчёта добавить форму:
+include_qualification (по умолчанию ON)
+include_doe (по умолчанию OFF)
+include_outputs
+include_defects
+include_raw_runs (appendix)
+Можно сохранить выбранные галки в report_settings (или localStorage).
+2) Обязательная шапка
+
+Рецептура: отрисовать как “карточку” в стиле текущих рецептов (название + компоненты PHR).
+Параметры машины: текстовый блок ввода (textarea или editable table) — чтобы вручную внести пресс/машину.
+3) Вывод квалификации — не по шагам, а оптимальные параметры
+Собираем итоговые оптимальные значения:
+
+Скорость инжекции: из шага 1 (recommended_inj_speed).
+Окно процесса: из шага 4 (window_low/high temp/pressure + center).
+Gate seal time: из шага 5.
+Cooling time: min при Cosmetic OK (шаг 6).
+Показываем как “Recommended Settings” (карточками/табличкой).
+Графики‑подтверждения:
+Rheology chart (step 1).
+Process window chart (step 4).
+4) DOE — опционально
+
+В HTML отчёте секция DOE показывается только если отмечено.
+По умолчанию OFF.
+Если включено:
+дизайн, факторы, run count,
+summary outputs, heatmap/scatter.
+5) Выходные форматы
+
+HTML отчёт: /experiments/:id/report?include=...
+PDF: кнопка/ссылка “Download PDF” → /experiments/:id/report.pdf?include=...
+CSV: /experiments/:id/report.csv?include=...
+можно разбить на вкладки/несколько CSV (если нужно): qualification.csv, doe.csv, outputs.csv.
+6) Данные / структура ReportData
+
+type ReportData = {
+  experiment;
+  recipes;
+  machineNotes; // текст
+  settings: {
+    recommended_inj_speed;
+    window; // low/high + center
+    gate_seal_time;
+    min_cooling_time;
+  };
+  charts: { rheology; window; };
+  doe?: { design, factors, runs, charts, summaries };
+  outputs?: { fields, defects };
+};
+7) Реализация (в коде)
+
+report_service.ts:
+buildReport(experimentId, options)
+renderHtml(reportData)
+toCsv(reportData, options)
+report.ts:
+GET /experiments/:id/report
+GET report.pdf
+GET report.csv
+В HTML рендере: section toggles.
+Чтобы двигаться дальше, предлагаю:
+
+Согласовать точный вид шапки рецептуры (можно скопировать из recipes view).
+Решить, где хранить “параметры машины”:
+просто textarea в отчёте (не сохраняется),
+или сохранять в БД (в отдельной таблице/JSON).
+Скажи, как хочешь по пунктам 1–2, и я начну правки.

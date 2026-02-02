@@ -1,0 +1,60 @@
+<%- include('partials/head', { title: 'IM Planner | Machines' }) %>
+<%- include('partials/nav') %>
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+      <h1 class="card-title">Machine Library</h1>
+      <a class="pure-button pure-button-primary" href="/machines/new">Add Machine</a>
+    </div>
+    <% if (!machines || machines.length === 0) { %>
+      <p class="small-note">No machines yet.</p>
+    <% } else { %>
+      <table class="pure-table table-compact machine-table">
+        <thead>
+          <tr>
+            <th>Machine</th>
+            <th>Details</th>
+            <th>Clamp force</th>
+            <th>Injection pressure</th>
+            <th>Intensification</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% machines.forEach((machine) => { %>
+            <tr>
+              <td class="machine-cell">
+                <% if (machine.image_url) { %>
+                  <img class="machine-thumb" src="<%= machine.image_url %>" alt="<%= machine.name %>">
+                <% } else { %>
+                  <div class="machine-thumb placeholder">No image</div>
+                <% } %>
+                <div>
+                  <a class="machine-name" href="/machines/<%= machine.id %>"><%- formatInline(machine.name) %></a>
+                  <div class="small-note"><%= machine.vendor || '' %> <%= machine.model || '' %></div>
+                </div>
+              </td>
+              <td>
+                <% if (machine.settings?.tie_bar_distance_mm) { %>
+                  <div class="small-note">Tie bars: <%= machine.settings.tie_bar_distance_mm %> mm</div>
+                <% } %>
+                <% if (machine.settings?.platen_size_mm) { %>
+                  <div class="small-note">Platen: <%= machine.settings.platen_size_mm %> mm</div>
+                <% } %>
+              </td>
+              <td><%= machine.clamp_force_kN ? `${machine.clamp_force_kN} kN` : '-' %></td>
+              <td><%= machine.injection_pressure_bar ? `${machine.injection_pressure_bar} bar` : '-' %></td>
+              <td><%= machine.intensification_ratio ? `${machine.intensification_ratio}` : '-' %></td>
+              <td>
+                <form action="/machines/<%= machine.id %>/delete" method="post">
+                  <button class="pure-button button-danger" type="submit">Delete</button>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+</div>
+<%- include('partials/foot') %>

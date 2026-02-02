@@ -15,6 +15,7 @@ import {
   upsertQualStepSettings
 } from "../repos/qual_repo.js";
 import type { QualField } from "../repos/qual_repo.js";
+import { listMachineParams } from "../repos/machine_params_repo.js";
 
 type StepDefinition = {
   step_number: number;
@@ -390,6 +391,30 @@ export function recomputeDerivedAndSummary(
   stepId: number,
   stepNumber: number
 ) {
+  const machineParamMap = (() => {
+    const row = db
+      .prepare("SELECT machine_id FROM experiments WHERE id = ?")
+      .get(experimentId) as { machine_id?: number | null } | undefined;
+    if (!row?.machine_id) return new Map<string, string>();
+    const params = listMachineParams(db, row.machine_id);
+    return new Map(
+      params.map((param) => [`${row.machine_id}:${param.id}`, param.value_text ?? ""])
+    );
+  })();
+  const resolveSettingNumber = (raw: unknown) => {
+    if (raw == null) return NaN;
+    const text = String(raw).trim();
+    if (!text) return NaN;
+    // Allow settings to be stored as %machineId:paramId% tokens.
+    const resolved = text.replace(/%(\d+:\d+)%/g, (match, token) => {
+      if (machineParamMap.has(token)) {
+        return String(machineParamMap.get(token) ?? "");
+      }
+      return match;
+    });
+    if (/%\d+:\d+%/.test(resolved)) return NaN;
+    return parseNumber(resolved);
+  };
   const fields = listQualFields(db, stepId);
   const runs = listQualRuns(db, stepId);
   const fieldById = new Map(fields.map((field) => [field.id, field]));
@@ -399,8 +424,9 @@ export function recomputeDerivedAndSummary(
   if (settings) {
     try {
       const parsed = JSON.parse(settings);
-      if (Number.isFinite(parsed?.intensification_coeff)) {
-        intensificationCoeff = Number(parsed.intensification_coeff);
+      const resolved = resolveSettingNumber(parsed?.intensification_coeff);
+      if (Number.isFinite(resolved)) {
+        intensificationCoeff = resolved;
       }
     } catch {
       intensificationCoeff = 1;
@@ -466,9 +492,8 @@ export function recomputeDerivedAndSummary(
       if (settingsRaw) {
         try {
           const parsed = JSON.parse(settingsRaw);
-          if (Number.isFinite(parsed?.target_weight_g)) {
-            targetWeight = Number(parsed.target_weight_g);
-          }
+          const resolved = resolveSettingNumber(parsed?.target_weight_g);
+          if (Number.isFinite(resolved)) targetWeight = resolved;
         } catch {
           targetWeight = null;
         }
@@ -489,11 +514,13 @@ export function recomputeDerivedAndSummary(
       if (settingsRaw) {
         try {
           const parsed = JSON.parse(settingsRaw);
-          if (Number.isFinite(parsed?.intensification_coeff)) {
-            intensificationCoeffLocal = Number(parsed.intensification_coeff);
+          const resolvedCoeff = resolveSettingNumber(parsed?.intensification_coeff);
+          if (Number.isFinite(resolvedCoeff)) {
+            intensificationCoeffLocal = resolvedCoeff;
           }
-          if (Number.isFinite(parsed?.machine_max_pressure_bar)) {
-            machineMaxOverride = Number(parsed.machine_max_pressure_bar);
+          const resolvedMax = resolveSettingNumber(parsed?.machine_max_pressure_bar);
+          if (Number.isFinite(resolvedMax)) {
+            machineMaxOverride = resolvedMax;
           }
         } catch {
           intensificationCoeffLocal = intensificationCoeff;
@@ -543,8 +570,9 @@ export function recomputeDerivedAndSummary(
   if (stepNumber === 1 && settings) {
     try {
       const parsed = JSON.parse(settings);
-      if (Number.isFinite(parsed?.recommended_inj_speed)) {
-        summary.recommended_inj_speed = Number(parsed.recommended_inj_speed);
+      const resolved = resolveSettingNumber(parsed?.recommended_inj_speed);
+      if (Number.isFinite(resolved)) {
+        summary.recommended_inj_speed = resolved;
       }
     } catch {
       // ignore

@@ -17,6 +17,37 @@
 
   <div class="card">
     <div class="card-header">
+      <h2 class="card-title">Experiment</h2>
+      <button class="icon-button" type="button" id="openMachineEdit" title="Edit machine assignment">
+        <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+      </button>
+    </div>
+    <div class="setup-summary">
+      <div>
+        <div class="small-note">Assigned machine</div>
+        <div class="setup-value">
+          <%= selectedMachine ? formatInline(selectedMachine.name) : 'No machine selected' %>
+        </div>
+      </div>
+      <div>
+        <div class="small-note">Recipe</div>
+        <div class="setup-value">
+          <% if (recipeNames && recipeNames.length) { %>
+            <%= recipeNames.map((name) => formatInline(name)).join(', ') %>
+          <% } else { %>
+            -
+          <% } %>
+        </div>
+      </div>
+      <div>
+        <div class="small-note">Description</div>
+        <div class="setup-value"><%= experiment.notes ? formatInline(experiment.notes) : '-' %></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
       <h2 class="card-title">Research Sections</h2>
     </div>
     <div class="section-list">
@@ -74,6 +105,42 @@
   </div>
 </div>
 
+<dialog class="modal-frame" id="machineEditDialog">
+  <div class="modal-header">
+    <strong>Edit experiment</strong>
+    <button class="pure-button" type="button" data-close>Close</button>
+  </div>
+  <form class="pure-form" action="/experiments/<%= experiment.id %>/update" method="post">
+    <div class="modal-body">
+      <div class="field-grid">
+        <div>
+          <label>Experiment name</label>
+          <input type="text" name="name" value="<%- formatInline(experiment.name) %>">
+        </div>
+        <div>
+          <label>Assigned machine</label>
+          <select name="machine_id">
+            <option value="">No machine</option>
+            <% (machines || []).forEach((machine) => { %>
+              <option value="<%= machine.id %>" <%= experiment.machine_id === machine.id ? 'selected' : '' %>>
+                <%- formatInline(machine.name) %>
+              </option>
+            <% }); %>
+          </select>
+        </div>
+        <div class="field-span">
+          <label>Description</label>
+          <textarea name="notes" rows="4" placeholder="Optional description"><%- formatInline(experiment.notes || '') %></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="pure-button" type="button" data-close>Cancel</button>
+      <button class="pure-button pure-button-primary" type="submit">Save</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog class="modal-frame" id="doeCreateDialog">
   <div class="modal-header">
     <strong>New Detailed Optimization Study</strong>
@@ -129,9 +196,12 @@
 <script>
   const doeCreateDialog = document.getElementById('doeCreateDialog');
   document.getElementById('openDoeCreate')?.addEventListener('click', () => doeCreateDialog?.showModal());
+  const machineEditDialog = document.getElementById('machineEditDialog');
+  document.getElementById('openMachineEdit')?.addEventListener('click', () => machineEditDialog?.showModal());
   document.querySelectorAll('[data-close]').forEach((btn) => {
     btn.addEventListener('click', () => {
       doeCreateDialog?.close();
+      machineEditDialog?.close();
     });
   });
 </script>

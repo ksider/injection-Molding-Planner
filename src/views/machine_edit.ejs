@@ -1,0 +1,201 @@
+<%- include('partials/head', { title: 'IM Planner | Machine' }) %>
+<%- include('partials/nav') %>
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+      <a class="back-link" href="/machines" aria-label="Back to machines">
+        <span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>
+      </a>
+      <h1 class="card-title"><%= machine ? 'Edit Machine' : 'Add Machine' %></h1>
+    </div>
+    <form class="pure-form pure-form-stacked" action="<%= machine ? `/machines/${machine.id}` : '/machines' %>" method="post">
+      <div class="form-grid">
+        <div>
+          <label>Name</label>
+          <input type="text" name="name" required value="<%= machine?.name ?? '' %>">
+        </div>
+        <div>
+          <label>Image URL</label>
+          <input type="text" name="image_url" value="<%= machine?.image_url ?? '' %>">
+        </div>
+        <div>
+          <label>Vendor</label>
+          <input type="text" name="vendor" value="<%= machine?.vendor ?? '' %>">
+        </div>
+        <div>
+          <label>Model</label>
+          <input type="text" name="model" value="<%= machine?.model ?? '' %>">
+        </div>
+      </div>
+
+      <% const machineParamMap = machineParamByCode || {}; %>
+      <% const tokenFor = (code) => { const param = machineParamMap[code]; return machine?.id && param?.id ? `%${machine.id}:${param.id}%` : ''; }; %>
+      <div class="card" style="margin-top: 1rem;">
+        <h3 class="card-title">Key parameters</h3>
+        <div class="form-grid">
+          <div>
+            <label>Clamp force (kN)</label>
+            <div class="field-with-code">
+              <input type="text" name="clamp_force_kN" value="<%= settings.clamp_force_kN ?? '' %>">
+              <input class="machine-code-input" type="text" readonly placeholder="Save to generate" value="<%= tokenFor('clamp_force_kN') %>">
+            </div>
+          </div>
+          <div>
+            <label>Clamp force (t)</label>
+            <div class="field-with-code">
+              <input type="text" name="clamp_force_t" value="<%= settings.clamp_force_t ?? '' %>">
+              <input class="machine-code-input" type="text" readonly placeholder="Save to generate" value="<%= tokenFor('clamp_force_t') %>">
+            </div>
+          </div>
+          <div>
+            <label>Intensification ratio</label>
+            <div class="field-with-code">
+              <input type="text" name="intensification_ratio" value="<%= settings.intensification_ratio ?? '' %>">
+              <input class="machine-code-input" type="text" readonly placeholder="Save to generate" value="<%= tokenFor('intensification_ratio') %>">
+            </div>
+          </div>
+          <div>
+            <label>Injection pressure (bar)</label>
+            <div class="field-with-code">
+              <input type="text" name="injection_pressure_bar" value="<%= settings.injection_pressure_bar ?? '' %>">
+              <input class="machine-code-input" type="text" readonly placeholder="Save to generate" value="<%= tokenFor('injection_pressure_bar') %>">
+            </div>
+          </div>
+          <div>
+            <label>Screw diameter (mm)</label>
+            <div class="field-with-code">
+              <input type="text" name="screw_diameter_mm" value="<%= settings.screw_diameter_mm ?? '' %>">
+              <input class="machine-code-input" type="text" readonly placeholder="Save to generate" value="<%= tokenFor('screw_diameter_mm') %>">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 1rem;">
+        <h3 class="card-title">Additional specs</h3>
+        <div class="form-grid">
+          <div>
+            <label>Tie bar distance (mm)</label>
+            <div class="field-with-code">
+              <input type="text" name="tie_bar_distance_mm" value="<%= settings.tie_bar_distance_mm ?? '' %>">
+              <input class="machine-code-input" type="text" readonly placeholder="Save to generate" value="<%= tokenFor('tie_bar_distance_mm') %>">
+            </div>
+          </div>
+          <div>
+            <label>Platen size (mm)</label>
+            <div class="field-with-code">
+              <input type="text" name="platen_size_mm" value="<%= settings.platen_size_mm ?? '' %>">
+              <input class="machine-code-input" type="text" readonly placeholder="Save to generate" value="<%= tokenFor('platen_size_mm') %>">
+            </div>
+          </div>
+          <div>
+            <label>Opening stroke (mm)</label>
+            <div class="field-with-code">
+              <input type="text" name="opening_stroke_mm" value="<%= settings.opening_stroke_mm ?? '' %>">
+              <input class="machine-code-input" type="text" readonly placeholder="Save to generate" value="<%= tokenFor('opening_stroke_mm') %>">
+            </div>
+          </div>
+          <div>
+            <label>Min mold height (mm)</label>
+            <div class="field-with-code">
+              <input type="text" name="min_mold_height_mm" value="<%= settings.min_mold_height_mm ?? '' %>">
+              <input class="machine-code-input" type="text" readonly placeholder="Save to generate" value="<%= tokenFor('min_mold_height_mm') %>">
+            </div>
+          </div>
+          <div>
+            <label>Max mold height (mm)</label>
+            <div class="field-with-code">
+              <input type="text" name="max_mold_height_mm" value="<%= settings.max_mold_height_mm ?? '' %>">
+              <input class="machine-code-input" type="text" readonly placeholder="Save to generate" value="<%= tokenFor('max_mold_height_mm') %>">
+            </div>
+          </div>
+          <div>
+            <label>Injection volume (cm3)</label>
+            <div class="field-with-code">
+              <input type="text" name="injection_volume_cm3" value="<%= settings.injection_volume_cm3 ?? '' %>">
+              <input class="machine-code-input" type="text" readonly placeholder="Save to generate" value="<%= tokenFor('injection_volume_cm3') %>">
+            </div>
+          </div>
+          <div>
+            <label>Injection weight (g)</label>
+            <div class="field-with-code">
+              <input type="text" name="injection_weight_g" value="<%= settings.injection_weight_g ?? '' %>">
+              <input class="machine-code-input" type="text" readonly placeholder="Save to generate" value="<%= tokenFor('injection_weight_g') %>">
+            </div>
+          </div>
+          <div>
+            <label>Screw speed (rpm)</label>
+            <div class="field-with-code">
+              <input type="text" name="screw_speed_rpm" value="<%= settings.screw_speed_rpm ?? '' %>">
+              <input class="machine-code-input" type="text" readonly placeholder="Save to generate" value="<%= tokenFor('screw_speed_rpm') %>">
+            </div>
+          </div>
+          <div>
+            <label>Plasticizing rate (g/s)</label>
+            <div class="field-with-code">
+              <input type="text" name="plasticizing_rate_g_s" value="<%= settings.plasticizing_rate_g_s ?? '' %>">
+              <input class="machine-code-input" type="text" readonly placeholder="Save to generate" value="<%= tokenFor('plasticizing_rate_g_s') %>">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 1rem;">
+        <h3 class="card-title">Notes / Scheme</h3>
+        <textarea name="notes" rows="6"><%= machine?.notes ?? '' %></textarea>
+      </div>
+
+      <div class="card" style="margin-top: 1rem;">
+        <div class="card-header">
+          <h3 class="card-title">Custom fields</h3>
+          <button class="pure-button pure-button-secondary" type="button" id="addMachineCustomField">Add field</button>
+        </div>
+        <div
+          id="machineCustomFields"
+          class="setup-fields"
+          data-show-machine-code="1"
+          data-machine-id="<%= machine?.id ?? '' %>"
+        ></div>
+        <input type="hidden" id="machineCustomFieldsJson" name="custom_fields_json" value="">
+      </div>
+
+      <button class="pure-button pure-button-primary" type="submit"><%= machine ? 'Save' : 'Create' %></button>
+    </form>
+  </div>
+</div>
+<%- include('partials/foot') %>
+
+<script>
+  const listEl = document.getElementById('machineCustomFields');
+  const addBtn = document.getElementById('addMachineCustomField');
+  const hiddenInput = document.getElementById('machineCustomFieldsJson');
+  const initialFields = <%- JSON.stringify(machineParams || []) %>;
+
+  const updateHidden = () => {
+    if (!hiddenInput || !listEl) return;
+    const rows = Array.from(listEl.querySelectorAll('[data-custom-field]'));
+    const data = rows.map((row) => ({
+      id: row.dataset.fieldId || '',
+      code: row.querySelector('[data-custom-code]')?.value || '',
+      label: row.querySelector('[data-custom-label]')?.value || '',
+      unit: row.querySelector('[data-custom-unit]')?.value || '',
+      value: row.querySelector('[data-custom-value]')?.value ?? ''
+    })).filter((item) => item.label);
+    hiddenInput.value = JSON.stringify(data);
+  };
+
+  const manager = window.IMPlanner?.createCustomFieldManager({
+    listEl,
+    onChange: updateHidden,
+    rowClass: 'setup-field-row'
+  });
+
+  if (manager) {
+    initialFields.forEach((field) => manager.addRow(field));
+    updateHidden();
+    addBtn?.addEventListener('click', () => {
+      manager.addRow({});
+      updateHidden();
+    });
+  }
+</script>

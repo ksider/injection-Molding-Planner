@@ -636,6 +636,43 @@ sub {
   width: 120px;
 }
 
+.machine-table {
+  width: 100%;
+}
+
+.machine-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.machine-thumb {
+  width: 72px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #f7f4ef;
+}
+
+.machine-thumb.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.machine-name {
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.machine-name:hover {
+  text-decoration: underline;
+}
+
 .setup-actions {
   display: flex;
   align-items: center;
@@ -662,6 +699,26 @@ sub {
 .setup-field-row {
   display: grid;
   grid-template-columns: minmax(160px, 1fr) minmax(120px, 160px) minmax(140px, 160px) 40px;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.setup-field-row.has-code {
+  grid-template-columns: minmax(160px, 1fr) minmax(120px, 160px) minmax(140px, 160px) 160px 40px;
+}
+
+.machine-code-input {
+  font-size: 0.75rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 8px;
+  border: 1px dashed var(--border);
+  background: #f7f7f5;
+  color: var(--ink-soft);
+}
+
+.field-with-code {
+  display: grid;
+  grid-template-columns: 1fr 160px;
   gap: 0.5rem;
   align-items: center;
 }
@@ -898,6 +955,10 @@ table.pure-table {
   gap: 0.75rem;
 }
 
+.field-span {
+  grid-column: 1 / -1;
+}
+
 .field-chip {
   position: relative;
   display: grid;
@@ -1065,16 +1126,25 @@ table.pure-table {
 }
 
 .tag-selected {
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  min-height: 34px;
+  min-height: 0;
   align-items: center;
-  padding: 0.35rem 0.5rem;
+  padding: 0.25rem 0.4rem;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #fff;
   cursor: pointer;
+  align-content: flex-start;
+  width: 100%;
+}
+
+.tag-selected .tag-chip {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tag-placeholder {
@@ -1105,6 +1175,9 @@ table.pure-table {
 
 .tag-select {
   min-width: 160px;
+  max-width: 260px;
+  width: auto;
+  display: inline-block;
 }
 
 .tag-panel {
@@ -1129,6 +1202,24 @@ table.pure-table {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+.template-preview {
+  font-size: 0.8rem;
+  color: var(--muted);
+  min-height: 1rem;
+}
+
+.template-preview.is-visible {
+  margin-top: 0.2rem;
+}
+
+.template-preview.is-resolved {
+  color: #2f8f5b;
+}
+
+.template-preview.is-missing {
+  color: #b94a48;
 }
 
 .tag-toggle {

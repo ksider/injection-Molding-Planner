@@ -3,6 +3,91 @@
 
   const normalizeText = (value) => String(value ?? "").trim();
 
+  root.templateMap = {};
+  root.setTemplateMap = (map) => {
+    root.templateMap = map || {};
+    root.initTemplateInputs?.(document);
+  };
+
+  const resolveTemplate = (value) => {
+    const text = String(value ?? "");
+    const missing = [];
+    // Replace %machineId:paramId% tokens with machine param values.
+    const resolved = text.replace(/%(\d+:\d+)%/g, (match, token) => {
+      if (Object.prototype.hasOwnProperty.call(root.templateMap, token)) {
+        return String(root.templateMap[token]);
+      }
+      missing.push(match);
+      return match;
+    });
+    return { resolved, missing };
+  };
+  root.resolveTemplate = resolveTemplate;
+
+  root.initTemplateInputs = (rootEl = document) => {
+    const inputs = rootEl.querySelectorAll("[data-template-input]");
+    inputs.forEach((input) => {
+      const row = input.closest("[data-custom-field]") || input.parentElement;
+      if (!row) return;
+      let preview = row.querySelector("[data-template-preview]");
+      if (!preview) {
+        preview = document.createElement("div");
+        preview.className = "template-preview";
+        preview.dataset.templatePreview = "1";
+        input.insertAdjacentElement("afterend", preview);
+      }
+      const update = () => {
+        const raw = input.value || "";
+        if (!/%\d+:\d+%/.test(raw)) {
+          preview.textContent = "";
+          preview.classList.remove("is-visible", "is-missing");
+          return;
+        }
+        // Inline preview (green when resolved, red when missing).
+        const { resolved, missing } = resolveTemplate(raw);
+        if (missing.length) {
+          preview.textContent = `Missing: ${missing.join(", ")}`;
+          preview.classList.add("is-visible", "is-missing");
+          preview.classList.remove("is-resolved");
+          return;
+        }
+        preview.textContent = `= ${resolved}`;
+        preview.classList.add("is-visible", "is-resolved");
+        preview.classList.remove("is-missing");
+      };
+      if (!input.dataset.templateBound) {
+        input.addEventListener("input", update);
+        input.dataset.templateBound = "1";
+      }
+      update();
+    });
+  };
+
+  root.updateTemplateOutputs = (rootEl = document) => {
+    const outputs = rootEl.querySelectorAll("[data-template-output]");
+    outputs.forEach((el) => {
+      const sourceId = el.dataset.templateSource || "";
+      const source = sourceId ? document.getElementById(sourceId) : null;
+      const rawValue = source ? source.value : el.dataset.templateValue || "";
+      const text = String(rawValue ?? "").trim();
+      // Summary outputs: keep inputs as token, render resolved value in UI.
+      if (!text) {
+        el.textContent = el.dataset.templateFallback || "-";
+        return;
+      }
+      if (/%\d+:\d+%/.test(text) && root.resolveTemplate) {
+        const result = root.resolveTemplate(text);
+        if (result?.missing?.length) {
+          el.textContent = text;
+          return;
+        }
+        el.textContent = String(result?.resolved ?? text);
+        return;
+      }
+      el.textContent = text;
+    });
+  };
+
   const initTagSelect = (container) => {
     if (!container || container.dataset.tagSelectInit) return;
     container.dataset.tagSelectInit = "1";
@@ -178,7 +263,11 @@
     },
     true
   );
-  document.addEventListener("DOMContentLoaded", () => initTagSelects());
+  document.addEventListener("DOMContentLoaded", () => {
+    initTagSelects();
+    root.initTemplateInputs?.(document);
+    root.updateTemplateOutputs?.(document);
+  });
   root.initTagSelects = initTagSelects;
 
   const observer = new MutationObserver((mutations) => {
@@ -202,6 +291,14 @@
     rowClass = "setup-field-row"
   }) => {
     if (!listEl) return null;
+    const showMachineCode = listEl.dataset.showMachineCode === "1";
+    const machineId = normalizeText(listEl.dataset.machineId);
+    const makeMachineToken = (id) => {
+      const fieldId = normalizeText(id);
+      if (!machineId || !/^\d+$/.test(machineId)) return "";
+      if (!fieldId || !/^\d+$/.test(fieldId)) return "";
+      return `%${machineId}:${fieldId}%`;
+    };
 
     const notifyChange = () => {
       if (typeof onChange === "function") onChange();
@@ -209,13 +306,20 @@
 
     const buildRow = (data = {}) => {
       const row = document.createElement("div");
-      row.className = rowClass;
+      row.className = showMachineCode ? `${rowClass} has-code` : rowClass;
       row.dataset.customField = "1";
       row.dataset.fieldId = data.id || `custom_${Date.now()}`;
+      const codeToken = showMachineCode ? makeMachineToken(data.id) : "";
       row.innerHTML = `
         <input type="text" data-custom-label value="${normalizeText(data.label)}" placeholder="Label">
         <input type="text" data-custom-unit value="${normalizeText(data.unit)}" placeholder="Unit">
-        <input type="number" step="any" data-custom-value value="${normalizeText(data.value)}" placeholder="Value">
+        <input type="text" data-custom-value data-template-input value="${normalizeText(data.value)}" placeholder="Value">
+        <div class="template-preview" data-template-preview></div>
+        ${
+          showMachineCode
+            ? `<input class="machine-code-input" type="text" value="${codeToken}" readonly title="Token">`
+            : ""
+        }
         <button class="icon-button danger" type="button" data-remove-field title="Remove">
           <span class="material-symbols-rounded" aria-hidden="true">delete</span>
         </button>
@@ -227,6 +331,7 @@
     const addRow = (data = {}) => {
       const row = buildRow(data);
       listEl.appendChild(row);
+      root.initTemplateInputs?.(row);
       notifyChange();
       return row;
     };

@@ -15,6 +15,16 @@
           <input type="text" id="name" name="name" required>
         </div>
         <div>
+          <label for="machine_id">Machine</label>
+          <select id="machine_id" name="machine_id">
+            <option value="">Select machine...</option>
+            <% (machines || []).forEach((machine) => { %>
+              <option value="<%= machine.id %>"><%- formatInline(machine.name) %></option>
+            <% }); %>
+          </select>
+          <div class="small-note">Manage machines in Machine Library.</div>
+        </div>
+        <div>
           <label for="notes">Description</label>
           <textarea id="notes" name="notes"></textarea>
         </div>

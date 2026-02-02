@@ -8,13 +8,16 @@ import {
 } from "../services/experiments_service.js";
 import { ensureQualificationDefaults } from "../services/qualification_service.js";
 import { listRecipes, getRecipeComponents } from "../repos/recipes_repo.js";
+import { listMachines } from "../repos/machines_repo.js";
 import {
   getExperiment,
   getExperimentRecipes,
   deleteExperiment,
+  updateExperiment,
   getDesignMetadata,
   upsertDesignMetadata
 } from "../repos/experiments_repo.js";
+import { getMachine, listMachines } from "../repos/machines_repo.js";
 import { createDoeStudy, deleteDoeStudy, getDoeStudy, listDoeStudies } from "../repos/doe_repo.js";
 import { listQualSummaries } from "../repos/qual_repo.js";
 import {
@@ -55,7 +58,8 @@ export function createExperimentsRouter(db: Db) {
       ...recipe,
       components: getRecipeComponents(db, recipe.id)
     }));
-    res.render("experiment_new", { recipes });
+    const machines = listMachines(db);
+    res.render("experiment_new", { recipes, machines });
   });
 
   router.post("/experiments", (req, res) => {
@@ -68,7 +72,8 @@ export function createExperimentsRouter(db: Db) {
     const experimentId = createExperimentWithDefaults(db, {
       name: req.body.name,
       notes: req.body.notes || null,
-      recipe_ids: recipeIds
+      recipe_ids: recipeIds,
+      machine_id: req.body.machine_id ? Number(req.body.machine_id) : null
     });
     ensureQualificationDefaults(db, experimentId);
 
@@ -81,10 +86,18 @@ export function createExperimentsRouter(db: Db) {
     if (!experiment) return res.status(404).send("Experiment not found");
     const qualSummaries = listQualSummaries(db, experimentId);
     const doeStudies = listDoeStudies(db, experimentId);
+    const machines = listMachines(db);
+    const selectedMachine = experiment.machine_id ? getMachine(db, experiment.machine_id) : null;
+    const recipeIds = getExperimentRecipes(db, experimentId);
+    const recipeNameById = new Map(listRecipes(db).map((recipe) => [recipe.id, recipe.name]));
+    const recipeNames = recipeIds.map((id) => recipeNameById.get(id)).filter(Boolean);
     res.render("experiment_detail", {
       experiment,
       qualSummaries,
-      doeStudies
+      doeStudies,
+      machines,
+      selectedMachine,
+      recipeNames
     });
   });
 
@@ -414,6 +427,32 @@ export function createExperimentsRouter(db: Db) {
     const experimentId = Number(req.params.id);
     deleteExperiment(db, experimentId);
     res.redirect("/");
+  });
+
+  router.post("/experiments/:id/machine", (req, res) => {
+    const experimentId = Number(req.params.id);
+    const experiment = getExperiment(db, experimentId);
+    if (!experiment) return res.status(404).send("Experiment not found");
+    const raw = String(req.body.machine_id || "").trim();
+    const machineId = raw ? Number(raw) : null;
+    updateExperiment(db, experimentId, { machine_id: Number.isFinite(machineId) ? machineId : null });
+    res.redirect(`/experiments/${experimentId}`);
+  });
+
+  router.post("/experiments/:id/update", (req, res) => {
+    const experimentId = Number(req.params.id);
+    const experiment = getExperiment(db, experimentId);
+    if (!experiment) return res.status(404).send("Experiment not found");
+    const name = String(req.body.name || "").trim();
+    const notes = req.body.notes ? String(req.body.notes).trim() : null;
+    const raw = String(req.body.machine_id || "").trim();
+    const machineId = raw ? Number(raw) : null;
+    updateExperiment(db, experimentId, {
+      name: name || experiment.name || "Untitled experiment",
+      notes: notes || null,
+      machine_id: Number.isFinite(machineId) ? machineId : null
+    });
+    res.redirect(`/experiments/${experimentId}`);
   });
 
   router.post("/experiments/:id/doe/:doeId/configs", (req, res) => {
