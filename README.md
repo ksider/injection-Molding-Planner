@@ -18,6 +18,18 @@ Open `http://localhost:3000`.
 6) Review analysis (charts + heatmap + 3D when possible).
 7) Export runs (wide or long CSV).
 
+## Qualification (Scientific Molding)
+The qualification flow includes 6 steps based on scientific molding methodology:
+1) Rheology / Viscosity curve
+2) Cavity balance
+3) Pressure drop
+4) Cosmetic process window
+5) Gate seal study
+6) Cooling time optimization
+
+Reference book (Amazon search):
+- Robust Process Development and Scientific Molding (Suhas Kulkarni): https://a.co/d/aDv52KL
+
 ## Supported Recipe Import Formats
 The importer accepts two common formats:
 
