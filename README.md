@@ -29,13 +29,14 @@ npm run dev
 Open `http://localhost:3000`.
 
 ## Core Flows
-1) Import recipes from a CSV/TSV matrix.
-2) Create an experiment (BBD/FFA/SCREEN/SIM).
-3) Configure factors and defaults.
-4) Generate a runlist.
-5) Enter run data and defect tags.
-6) Review analysis (charts + heatmap + 3D when possible).
-7) Export runs (wide or long CSV).
+1) Create an experiment with recipes and machine assignment.
+2) Run the 6‑step Scientific Molding qualification (each step has its own setup + runs).
+3) Create multiple Detailed Optimization (DOE) studies under the same experiment.
+4) Configure factors, generate runlists, and enter run data.
+5) Review analysis (charts + heatmap + 3D when possible).
+6) Generate and edit reports (multiple reports per experiment).
+
+Planned: export data to CSV.
 
 ## Qualification (Scientific Molding)
 The qualification flow includes 6 steps based on scientific molding methodology:
@@ -50,8 +51,7 @@ Reference book (Amazon search):
 - Robust Process Development and Scientific Molding (Suhas Kulkarni): https://a.co/d/aDv52KL
 
 ## Report Plan (Next Work)
-The current report plan lives at `report_plan` in the project root. That file is the source of truth
-for the upcoming HTML/PDF/CSV report work and should be reviewed first before coding.
+The current report plan lives at `report_plan` in the project root.
 
 ## Recent Changes (for handoff)
 - Machine library now supports parameter tokens in the format `%machineId:paramId%`.
