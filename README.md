@@ -5,9 +5,6 @@
     </td>
     <td>
       <h1>Injection Molding Planner</h1>
-      <p>
-        <img src="screenshot.jpg" alt="IM Planner screenshot" />
-      </p>
       <p>Local, offline planner for injection molding.</p>
       <p><strong>Stack:</strong></p>
       <p>
@@ -23,6 +20,10 @@
     </td>
   </tr>
 </table>
+
+      <p>
+        <img src="screenshot.jpg" alt="IM Planner screenshot" />
+      </p>
 
 ## Install + Run
 ```bash
