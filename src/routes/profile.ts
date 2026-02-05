@@ -3,6 +3,10 @@ import bcrypt from "bcryptjs";
 import type { Db } from "../db.js";
 import { getUserPasswordHash, updateUserName, updateUserPassword } from "../repos/users_repo.js";
 import { listExperimentsForOwnerWithMeta, type ExperimentListRow } from "../repos/experiments_repo.js";
+import { listTasksForUser } from "../repos/tasks_read_repo.js";
+import { listTaskEntities } from "../repos/tasks_repo.js";
+import { computeTaskProgress } from "../services/tasks_service.js";
+import { listQualSummarySteps } from "../repos/qual_repo.js";
 
 export function createProfileRouter(db: Db) {
   const router = express.Router();
@@ -30,7 +34,34 @@ export function createProfileRouter(db: Db) {
     const experiments = req.user?.id
       ? listExperimentsForOwnerWithMeta(db, req.user.id, false)
       : [];
-    res.render("profile", { title: "Profile", experiments: enrich(experiments), error: null, notice: null });
+    const tasks = req.user?.id ? listTasksForUser(db, req.user.id) : [];
+    const summaryByExperiment = new Map<number, Set<number>>();
+    const tasksWithProgress = tasks.map((task) => {
+      if (!summaryByExperiment.has(task.experiment_id)) {
+        summaryByExperiment.set(
+          task.experiment_id,
+          new Set(listQualSummarySteps(db, task.experiment_id))
+        );
+      }
+      const summarySteps = summaryByExperiment.get(task.experiment_id) ?? new Set<number>();
+      const entities = listTaskEntities(db, task.task_id).map((entity) => {
+        if (entity.entity_type === "qualification_step") {
+          if (summarySteps.has(entity.entity_id)) {
+            return { ...entity, status: "done" };
+          }
+        }
+        return entity;
+      });
+      const progress = computeTaskProgress(entities);
+      return { ...task, progress_percent: Math.round((progress.percent || 0) * 100) };
+    });
+    res.render("profile", {
+      title: "Profile",
+      experiments: enrich(experiments),
+      tasks: tasksWithProgress,
+      error: null,
+      notice: null
+    });
   });
 
   router.post("/me/name", (req, res) => {
@@ -49,18 +80,60 @@ export function createProfileRouter(db: Db) {
     const storedHash = getUserPasswordHash(db, req.user.id);
     if (!storedHash || !bcrypt.compareSync(current, storedHash)) {
       const experiments = listExperimentsForOwnerWithMeta(db, req.user.id, false);
+      const summaryByExperiment = new Map<number, Set<number>>();
+      const tasks = listTasksForUser(db, req.user.id).map((task) => {
+        if (!summaryByExperiment.has(task.experiment_id)) {
+          summaryByExperiment.set(
+            task.experiment_id,
+            new Set(listQualSummarySteps(db, task.experiment_id))
+          );
+        }
+        const summarySteps = summaryByExperiment.get(task.experiment_id) ?? new Set<number>();
+        const entities = listTaskEntities(db, task.task_id).map((entity) => {
+          if (entity.entity_type === "qualification_step") {
+            if (summarySteps.has(entity.entity_id)) {
+              return { ...entity, status: "done" };
+            }
+          }
+          return entity;
+        });
+        const progress = computeTaskProgress(entities);
+        return { ...task, progress_percent: Math.round((progress.percent || 0) * 100) };
+      });
       return res.render("profile", {
         title: "Profile",
         experiments: enrich(experiments),
+        tasks,
         error: "Current password is incorrect.",
         notice: null
       });
     }
     if (next.length < 8 || next !== confirm) {
       const experiments = listExperimentsForOwnerWithMeta(db, req.user.id, false);
+      const summaryByExperiment = new Map<number, Set<number>>();
+      const tasks = listTasksForUser(db, req.user.id).map((task) => {
+        if (!summaryByExperiment.has(task.experiment_id)) {
+          summaryByExperiment.set(
+            task.experiment_id,
+            new Set(listQualSummarySteps(db, task.experiment_id))
+          );
+        }
+        const summarySteps = summaryByExperiment.get(task.experiment_id) ?? new Set<number>();
+        const entities = listTaskEntities(db, task.task_id).map((entity) => {
+          if (entity.entity_type === "qualification_step") {
+            if (summarySteps.has(entity.entity_id)) {
+              return { ...entity, status: "done" };
+            }
+          }
+          return entity;
+        });
+        const progress = computeTaskProgress(entities);
+        return { ...task, progress_percent: Math.round((progress.percent || 0) * 100) };
+      });
       return res.render("profile", {
         title: "Profile",
         experiments: enrich(experiments),
+        tasks,
         error: "New password must be at least 8 characters and match confirmation.",
         notice: null
       });
@@ -68,9 +141,30 @@ export function createProfileRouter(db: Db) {
     const hash = bcrypt.hashSync(next, 12);
     updateUserPassword(db, req.user.id, hash);
     const experiments = listExperimentsForOwnerWithMeta(db, req.user.id, false);
+    const summaryByExperiment = new Map<number, Set<number>>();
+    const tasks = listTasksForUser(db, req.user.id).map((task) => {
+      if (!summaryByExperiment.has(task.experiment_id)) {
+        summaryByExperiment.set(
+          task.experiment_id,
+          new Set(listQualSummarySteps(db, task.experiment_id))
+        );
+      }
+      const summarySteps = summaryByExperiment.get(task.experiment_id) ?? new Set<number>();
+      const entities = listTaskEntities(db, task.task_id).map((entity) => {
+        if (entity.entity_type === "qualification_step") {
+          if (summarySteps.has(entity.entity_id)) {
+            return { ...entity, status: "done" };
+          }
+        }
+        return entity;
+      });
+      const progress = computeTaskProgress(entities);
+      return { ...task, progress_percent: Math.round((progress.percent || 0) * 100) };
+    });
     return res.render("profile", {
       title: "Profile",
       experiments: enrich(experiments),
+      tasks,
       error: null,
       notice: "Password updated."
     });

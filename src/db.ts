@@ -55,6 +55,45 @@ function initDb(db: Db) {
       FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE SET NULL,
       FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE SET NULL
     );
+    CREATE TABLE IF NOT EXISTS tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      experiment_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      status TEXT NOT NULL DEFAULT 'init',
+      owner_user_id INTEGER,
+      due_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (experiment_id) REFERENCES experiments(id) ON DELETE CASCADE,
+      FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+    CREATE TABLE IF NOT EXISTS task_entities (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL,
+      entity_type TEXT NOT NULL, -- qualification_step | doe | report
+      entity_id INTEGER NOT NULL,
+      label TEXT,
+      weight REAL NOT NULL DEFAULT 1,
+      progress_mode TEXT NOT NULL DEFAULT 'toggle', -- toggle | milestone
+      status TEXT NOT NULL DEFAULT 'init', -- init | in_progress | done | failed
+      signature_required INTEGER NOT NULL DEFAULT 0,
+      signature_user_id INTEGER,
+      signature_at TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+      FOREIGN KEY (signature_user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+    CREATE TABLE IF NOT EXISTS task_assignments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      role TEXT NOT NULL DEFAULT 'operator',
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
     CREATE TABLE IF NOT EXISTS recipes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -296,6 +335,9 @@ function initDb(db: Db) {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users(google_sub);
     CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
     CREATE INDEX IF NOT EXISTS idx_audit_actor_user_id ON audit_log(actor_user_id);
+    CREATE INDEX IF NOT EXISTS idx_tasks_experiment_id ON tasks(experiment_id);
+    CREATE INDEX IF NOT EXISTS idx_task_entities_task_id ON task_entities(task_id);
+    CREATE INDEX IF NOT EXISTS idx_task_assignments_task_id ON task_assignments(task_id);
   `);
 
   const adminSettingsCount = db

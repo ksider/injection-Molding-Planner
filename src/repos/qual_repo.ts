@@ -239,6 +239,15 @@ export function listQualSummaries(db: Db, experimentId: number) {
   }>;
 }
 
+export function listQualSummarySteps(db: Db, experimentId: number): number[] {
+  return db
+    .prepare(
+      "SELECT step_number FROM qual_step_summary WHERE experiment_id = ? ORDER BY step_number"
+    )
+    .all(experimentId)
+    .map((row: { step_number: number }) => row.step_number);
+}
+
 export function getQualStepSettings(db: Db, experimentId: number, stepNumber: number) {
   const row = db
     .prepare(

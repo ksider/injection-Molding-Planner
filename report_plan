@@ -1,60 +1,78 @@
-﻿Пошаговый план разработки (внедрение по этапам)
+﻿План интеграции Task Manager (внутри эксперимента) — этапы разработки
 
-Этап 0. Подготовка
-1. Зафиксировать env-переменные: ADMIN_EMAIL, ADMIN_TEMP_PASSWORD, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, SESSION_SECRET.
-2. Определить начальные protected‑routes (страницы и API).
-3. Утвердить названия таблиц и полей (users, admin_settings, sessions, audit_log).
+Этап 1. Модель данных
+- tasks:
+  id, experiment_id, title, description,
+  status (init | in_progress | done | failed),
+  owner_user_id (manager/engineer),
+  due_at, created_at, updated_at
+- task_entities:
+  id, task_id, entity_type (qualification_step | doe | report), entity_id,
+  label, weight (default равный), progress_mode (toggle | milestone)
+  * report учитывается только если привязан к задаче
+- task_assignments:
+  id, task_id, user_id (operator), role
 
-Этап 1. База данных и первый админ
-1. Добавить миграции для таблиц users, admin_settings, sessions, audit_log.
-2. Реализовать скрипт создания первого админа при старте (если отсутствует).
-3. Добавить флаг temp_password и проверку “нужно сменить пароль”.
+Этап 2. Логика прогресса
+- По умолчанию веса равные, но в редакторе можно менять.
+- Суммарный прогресс задачи = (сумма выполненных весов / сумма всех весов).
+- Для milestone: фиксированные этапы init → in_progress → done → failed.
+- Подпись вышестоящей роли в report‑сущности:
+  - добавляется опция “signature required”.
+  - подпись менеджера/инженера увеличивает вес сущности и может закрыть задачу.
 
-Этап 2. Сессии и локальный логин
-1. Подключить session store (SQLite) и Passport local strategy.
-2. Реализовать POST /auth/login и POST /auth/logout.
-3. Middleware проверки аутентификации для защищённых маршрутов.
-4. Экран логина + обработка ошибок.
+Этап 3. Сущности (initial scope)
+- qualification_step (6 шагов)
+- doe (исследование)
+- report (отчёт)
+  * один report может быть привязан к нескольким задачам (например, Qualification + DOE)
 
-Этап 3. Смена временного пароля
-1. Экран смены пароля (обязательный при temp_password=true).
-2. POST /auth/change-password.
-3. Снять temp_password после успешной смены.
+Этап 4. Правила прогресса и весов (по умолчанию)
+- Qualification steps:
+  Step 1: 3
+  Step 2: 1 (опциональный)
+  Step 3: 1 (опциональный)
+  Step 4: 3
+  Step 5: 2
+  Step 6: 2
+- Step 2 и Step 3 могут быть пропущены, но тогда требуется подпись в отчёте,
+  которая закрывает задачу (report + signature покрывают отсутствие шагов).
+- DOE:
+  главный вклад — отчёт и выводы.
+  runs учитываются как прогресс, но задача считается done только при наличии report (+signature).
 
-Этап 4. Google OAuth с доменным ограничением
-1. Подключить passport-google-oauth20.
-2. Реализовать /auth/google и /auth/google/callback.
-3. Проверка hd/email домена против admin_settings.allowed_domain.
-4. Связать или создать пользователя по google_sub/email.
+Этап 5. Роли и доступ
+- manager/engineer: создают задачи, связывают с сущностями, назначают владельца.
+- operator: отмечает прогресс по своим сущностям внутри задачи.
+- viewer: только чтение.
 
-Этап 5. Админка и управление доменом
-1. Страница админки (доступ только admin).
-2. Настройка allowed_domain через UI.
-3. Запись изменений в audit_log.
+Этап 6. API/маршруты
+- GET /experiments/:id/tasks (список)
+- POST /experiments/:id/tasks (создание)
+- POST /tasks/:id (обновление)
+- POST /tasks/:id/status
+- POST /tasks/:id/entities (привязка сущности)
+- POST /tasks/:id/assign (назначение оператора)
+- POST /tasks/:id/sign (подпись вышестоящей роли)
+- GET /me/tasks (список пользователя)
+- GET /tasks/:id/calendar.ics
+- GET /tasks/:id/calendar/google
 
-Этап 6. Управление пользователями
-1. Таблица пользователей (list + search).
-2. Редактирование пользователя (email/статус/role placeholder).
-3. Бан и удаление пользователя.
-4. Forced‑logout: удаление активных сессий.
-5. Audit log на все действия.
+Этап 7. UI внутри эксперимента
+- Отдельный остров Tasks с канбан‑доской (4 колонки).
+- Карточка задачи свернута: title + owner + due + %.
+- Клик по карточке → попап с:
+  описание, привязанные сущности, веса, прогресс, подпись.
 
-Этап 7. Безопасность
-1. Rate limit для /auth/login.
-2. Secure/HttpOnly cookies, SameSite=Lax.
-3. HTTPS (dev: mkcert или self‑signed; prod: reverse‑proxy/managed).
+Этап 8. UI на странице пользователя
+- Без канбана, список “задача — эксперимент”.
+- Показ: title, experiment, due, status, %.
 
-Этап 8. Тестирование
-1. Unit: доменная проверка, bcrypt, temp_password.
-2. Integration: login/logout, google callback, ban+forced logout.
-3. Admin: CRUD пользователей, домен.
+Этап 9. Календарь
+- Одна кнопка “Add to календарь”.
+- Варианты: Google Calendar link + Download .ics.
 
-Этап 9. Подготовка к ролям (этап 2)
-1. Оставить поле role.
-2. Спланировать role‑guard middleware и матрицу доступа.
-
-Этап 10. Связь экспериментов с пользователями (этап 2)
-1. Добавить поле owner_user_id в experiments (с FK на users).
-2. Заполнять owner_user_id при создании эксперимента.
-3. Ограничить просмотр/редактирование экспериментов владельцем (или ролью выше).
-4. Админ (или спец‑роль) может переназначить владельца.
+Этап 10. Тестирование
+- Проверка прогресса/весов/подписей.
+- Проверка прав доступа.
+- Проверка календарных ссылок.

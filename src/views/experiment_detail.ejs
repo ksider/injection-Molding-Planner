@@ -175,6 +175,34 @@
       </div>
     <% } %>
   </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">Tasks</h2>
+      <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'engineer')) { %>
+        <button class="pure-button pure-button-secondary" type="button" id="openTaskCreate">New Task</button>
+      <% } %>
+    </div>
+    <div class="kanban-board" data-experiment-id="<%= experiment.id %>">
+      <div class="kanban-column" data-status="init">
+        <div class="kanban-title">Init</div>
+        <div class="kanban-list" data-list></div>
+      </div>
+      <div class="kanban-column" data-status="in_progress">
+        <div class="kanban-title">In progress</div>
+        <div class="kanban-list" data-list></div>
+      </div>
+      <div class="kanban-column" data-status="done">
+        <div class="kanban-title">Done</div>
+        <div class="kanban-list" data-list></div>
+      </div>
+      <div class="kanban-column" data-status="failed">
+        <div class="kanban-title">Failed</div>
+        <div class="kanban-list" data-list></div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <dialog class="modal-frame" id="reportDialog">
@@ -340,18 +368,201 @@
   </form>
 </dialog>
 
+<dialog class="modal-frame" id="taskCreateDialog">
+  <div class="modal-header">
+    <strong>New Task</strong>
+    <button class="pure-button" type="button" data-close>Close</button>
+  </div>
+  <form class="pure-form" id="taskCreateForm">
+    <div class="modal-body">
+      <div class="field-grid">
+        <div>
+          <label for="taskTitleInput">Title</label>
+          <input id="taskTitleInput" name="title" type="text" required>
+        </div>
+        <div>
+          <label for="taskDueInput">Due date</label>
+          <input id="taskDueInput" name="due_at" type="date">
+        </div>
+        <div class="field-span">
+          <label for="taskDescInput">Description</label>
+          <textarea id="taskDescInput" name="description" rows="3"></textarea>
+        </div>
+        <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'engineer')) { %>
+          <div class="field-span">
+            <label for="taskOwnerSelect">Owner</label>
+            <select id="taskOwnerSelect" name="owner_user_id">
+              <option value="">No owner</option>
+              <% (users || []).forEach((user) => { %>
+                <option value="<%= user.id %>" <%= experiment.owner_user_id === user.id ? 'selected' : '' %>>
+                  <%- formatInline(user.name ? user.name : user.email) %>
+                </option>
+              <% }); %>
+            </select>
+          </div>
+        <% } else { %>
+          <input type="hidden" name="owner_user_id" value="<%= experiment.owner_user_id ?? '' %>">
+        <% } %>
+      </div>
+      <div class="task-entity-picker">
+        <div class="task-entity-card">
+          <div class="task-entity-title">Qualification (6 steps)</div>
+          <div class="small-note">Select steps to include in task.</div>
+          <div class="task-entity-steps">
+            <label class="pure-checkbox">
+              <input type="checkbox" name="qual_steps" value="1" checked> Step 1
+            </label>
+            <label class="pure-checkbox">
+              <input type="checkbox" name="qual_steps" value="2"> Step 2
+            </label>
+            <label class="pure-checkbox">
+              <input type="checkbox" name="qual_steps" value="3"> Step 3
+            </label>
+            <label class="pure-checkbox">
+              <input type="checkbox" name="qual_steps" value="4" checked> Step 4
+            </label>
+            <label class="pure-checkbox">
+              <input type="checkbox" name="qual_steps" value="5" checked> Step 5
+            </label>
+            <label class="pure-checkbox">
+              <input type="checkbox" name="qual_steps" value="6" checked> Step 6
+            </label>
+          </div>
+        </div>
+        <div class="task-entity-card">
+          <div class="task-entity-title">DOE studies</div>
+          <div class="small-note">Select DOE studies to include.</div>
+          <div class="task-entity-steps">
+            <% if (!doeStudies || doeStudies.length === 0) { %>
+              <div class="small-note">No DOE studies yet.</div>
+            <% } else { %>
+              <% doeStudies.forEach((study) => { %>
+                <label class="pure-checkbox">
+                  <input type="checkbox" name="doe_ids" value="<%= study.id %>">
+                  <%- formatInline(study.name) %>
+                </label>
+              <% }); %>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="pure-button" type="button" data-close>Cancel</button>
+      <button class="pure-button pure-button-primary" type="submit">Create</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="modal-frame" id="taskDetailDialog">
+  <div class="modal-header">
+    <strong id="taskTitle">Task</strong>
+    <button class="pure-button" type="button" data-close>Close</button>
+  </div>
+  <div class="modal-body">
+    <p id="taskDescription" class="small-note"></p>
+    <div class="task-meta">
+      <div><strong>Owner:</strong> <span id="taskOwner">-</span></div>
+      <div><strong>Due:</strong> <span id="taskDue">-</span></div>
+      <div><strong>Progress:</strong> <span id="taskProgress">0%</span></div>
+      <div><strong>Suggested:</strong> <span id="taskSuggested">-</span></div>
+    </div>
+    <div class="calendar-actions">
+      <button class="pure-button pure-button-secondary" type="button" id="calendarToggle">Add to calendar</button>
+      <div class="calendar-menu" id="calendarMenu">
+        <a class="pure-button" id="calendarIcsLink" href="#" download>Download .ics</a>
+        <a class="pure-button" id="calendarGoogleLink" href="#" target="_blank" rel="noopener">Google Calendar</a>
+      </div>
+    </div>
+    <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'engineer')) { %>
+      <div class="task-entity-form">
+        <h3 class="card-title" style="margin-top: 1rem;">Attach entity</h3>
+        <form class="pure-form" id="taskEntityForm">
+          <div class="task-entity-picker">
+            <div class="task-entity-card">
+              <div class="task-entity-title">Qualification (6 steps)</div>
+              <div class="small-note">Pick steps to add (defaults: 1,4,5,6).</div>
+              <div class="task-entity-steps">
+                <label class="pure-checkbox">
+                  <input type="checkbox" name="qual_steps_edit" value="1" checked> Step 1
+                </label>
+                <label class="pure-checkbox">
+                  <input type="checkbox" name="qual_steps_edit" value="2"> Step 2
+                </label>
+                <label class="pure-checkbox">
+                  <input type="checkbox" name="qual_steps_edit" value="3"> Step 3
+                </label>
+                <label class="pure-checkbox">
+                  <input type="checkbox" name="qual_steps_edit" value="4" checked> Step 4
+                </label>
+                <label class="pure-checkbox">
+                  <input type="checkbox" name="qual_steps_edit" value="5" checked> Step 5
+                </label>
+                <label class="pure-checkbox">
+                  <input type="checkbox" name="qual_steps_edit" value="6" checked> Step 6
+                </label>
+              </div>
+            </div>
+            <div class="task-entity-card">
+              <div class="task-entity-title">DOE studies</div>
+              <div class="small-note">Pick DOE studies to attach.</div>
+              <div class="task-entity-steps">
+                <% if (!doeStudies || doeStudies.length === 0) { %>
+                  <div class="small-note">No DOE studies yet.</div>
+                <% } else { %>
+                  <% doeStudies.forEach((study) => { %>
+                    <label class="pure-checkbox">
+                      <input type="checkbox" name="doe_ids_edit" value="<%= study.id %>">
+                      <%- formatInline(study.name) %>
+                    </label>
+                  <% }); %>
+                <% } %>
+              </div>
+            </div>
+            <div class="task-entity-card">
+              <div class="task-entity-title">Reports</div>
+              <div class="small-note">Attach reports (signature required).</div>
+              <div class="task-entity-steps">
+                <% if (!reports || reports.length === 0) { %>
+                  <div class="small-note">No reports yet.</div>
+                <% } else { %>
+                  <% reports.forEach((report) => { %>
+                    <label class="pure-checkbox">
+                      <input type="checkbox" name="report_ids_edit" value="<%= report.id %>">
+                      <%- formatInline(report.name) %>
+                    </label>
+                  <% }); %>
+                <% } %>
+              </div>
+            </div>
+          </div>
+          <button class="pure-button pure-button-primary" type="submit">Attach selected</button>
+        </form>
+      </div>
+    <% } %>
+    <h3 class="card-title" style="margin-top: 1rem;">Entities</h3>
+    <div id="taskEntities"></div>
+  </div>
+</dialog>
+
 <script>
+  const canSignReports = <%= currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'engineer') ? 'true' : 'false' %>;
   const doeCreateDialog = document.getElementById('doeCreateDialog');
   document.getElementById('openDoeCreate')?.addEventListener('click', () => doeCreateDialog?.showModal());
   const machineEditDialog = document.getElementById('machineEditDialog');
   document.getElementById('openMachineEdit')?.addEventListener('click', () => machineEditDialog?.showModal());
   const reportDialog = document.getElementById('reportDialog');
   document.getElementById('openReportDialog')?.addEventListener('click', () => reportDialog?.showModal());
+  const taskDetailDialog = document.getElementById('taskDetailDialog');
+  const taskCreateDialog = document.getElementById('taskCreateDialog');
+  document.getElementById('openTaskCreate')?.addEventListener('click', () => taskCreateDialog?.showModal());
   document.querySelectorAll('[data-close]').forEach((btn) => {
     btn.addEventListener('click', () => {
       doeCreateDialog?.close();
       machineEditDialog?.close();
       reportDialog?.close();
+      taskDetailDialog?.close();
+      taskCreateDialog?.close();
     });
   });
 
@@ -503,5 +714,266 @@
       }
     }
   });
+
+  // Tasks kanban (read-only).
+  const board = document.querySelector('.kanban-board');
+  const taskTitle = document.getElementById('taskTitle');
+  const taskDescription = document.getElementById('taskDescription');
+  const taskOwner = document.getElementById('taskOwner');
+  const taskDue = document.getElementById('taskDue');
+  const taskProgress = document.getElementById('taskProgress');
+  const taskSuggested = document.getElementById('taskSuggested');
+  const taskEntities = document.getElementById('taskEntities');
+  const calendarToggle = document.getElementById('calendarToggle');
+  const calendarMenu = document.getElementById('calendarMenu');
+  const calendarIcsLink = document.getElementById('calendarIcsLink');
+  const calendarGoogleLink = document.getElementById('calendarGoogleLink');
+  const taskEntityForm = document.getElementById('taskEntityForm');
+  let currentTaskId = null;
+
+  const setCheckboxState = (selector, existingMap, type) => {
+    document.querySelectorAll(selector).forEach((input) => {
+      const id = String(input.value);
+      const key = `${type}:${id}`;
+      if (existingMap.has(key)) {
+        input.checked = true;
+        input.disabled = true;
+        input.closest('label')?.classList.add('is-attached');
+      } else {
+        if (input.name === 'qual_steps_edit') {
+          const defaultOn = ['1', '4', '5', '6'].includes(id);
+          input.checked = defaultOn;
+        }
+        input.disabled = false;
+        input.closest('label')?.classList.remove('is-attached');
+      }
+    });
+  };
+
+  async function loadTasks() {
+    if (!board) return;
+    const experimentId = board.dataset.experimentId;
+    const resp = await fetch(`/experiments/${experimentId}/tasks`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const lists = new Map();
+    board.querySelectorAll('[data-status]').forEach((col) => {
+      const status = col.dataset.status;
+      const list = col.querySelector('[data-list]');
+      if (status && list) {
+        list.innerHTML = '';
+        lists.set(status, list);
+      }
+    });
+    (data.tasks || []).forEach((task) => {
+      const list = lists.get(task.status || 'init');
+      if (!list) return;
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'kanban-card';
+      card.draggable = true;
+      card.dataset.taskId = String(task.id);
+      const owner = task.owner_name || task.owner_email || '-';
+      const due = task.due_at ? new Date(task.due_at).toLocaleDateString() : '-';
+      const percent = Math.round((task.progress?.percent || 0) * 100);
+      card.innerHTML = `
+        <div class="kanban-card-title">${task.title}</div>
+        <div class="kanban-card-meta">${owner}</div>
+        <div class="kanban-card-meta">Due: ${due}</div>
+        <div class="kanban-card-progress">${percent}%</div>
+      `;
+      card.addEventListener('dragstart', (event) => {
+        event.dataTransfer?.setData('text/plain', String(task.id));
+        card.classList.add('is-dragging');
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('is-dragging');
+      });
+      card.addEventListener('click', () => openTask(task.id));
+      list.appendChild(card);
+    });
+  }
+
+  async function openTask(taskId) {
+    if (!taskDetailDialog) return;
+    const resp = await fetch(`/tasks/${taskId}`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    currentTaskId = taskId;
+    if (calendarMenu) calendarMenu.classList.remove('is-open');
+    if (calendarIcsLink) calendarIcsLink.href = `/tasks/${taskId}/calendar.ics`;
+    if (calendarGoogleLink) calendarGoogleLink.href = `/tasks/${taskId}/calendar/google`;
+    taskTitle.textContent = data.task?.title || 'Task';
+    taskDescription.textContent = data.task?.description || '';
+    const owner = data.owner_name || data.owner_email || '-';
+    taskOwner.textContent = owner;
+    taskDue.textContent = data.task?.due_at ? new Date(data.task.due_at).toLocaleDateString() : '-';
+    taskProgress.textContent = `${Math.round((data.progress?.percent || 0) * 100)}%`;
+    taskSuggested.textContent = data.suggestedStatus || '-';
+    taskEntities.innerHTML = '';
+    const attached = new Set(
+      (data.entities || []).map((entity) => `${entity.entity_type}:${entity.entity_id}`)
+    );
+    setCheckboxState('input[name="qual_steps_edit"]', attached, 'qualification_step');
+    setCheckboxState('input[name="doe_ids_edit"]', attached, 'doe');
+    setCheckboxState('input[name="report_ids_edit"]', attached, 'report');
+    (data.entities || []).forEach((entity) => {
+      const row = document.createElement('div');
+      row.className = 'task-entity-row';
+      const signed = entity.signature_at ? 'signed' : (entity.signature_required ? 'required' : 'no');
+      const signButton = canSignReports && entity.entity_type === 'report' && entity.signature_required && !entity.signature_at
+        ? `<button class="pure-button pure-button-secondary" type="button" data-entity-sign="${entity.id}">Sign report</button>`
+        : '';
+      row.innerHTML = `
+        <div><strong>${entity.entity_type}</strong> #${entity.entity_id}</div>
+        <div>weight: ${entity.weight}</div>
+        <div>status: ${entity.status}</div>
+        <div>signature: ${signed}</div>
+        ${signButton}
+        <button class="pure-button pure-button-secondary" type="button" data-entity-delete="${entity.id}">Remove</button>
+      `;
+      taskEntities.appendChild(row);
+    });
+    taskEntities.querySelectorAll('[data-entity-sign]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const entityId = btn.getAttribute('data-entity-sign');
+        if (!entityId) return;
+        const payload = new URLSearchParams();
+        payload.set('entity_id', entityId);
+        await fetch(`/tasks/${taskId}/sign`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: payload
+        });
+        openTask(taskId);
+        loadTasks();
+      });
+    });
+    taskEntities.querySelectorAll('[data-entity-delete]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const entityId = btn.getAttribute('data-entity-delete');
+        if (!entityId) return;
+        await fetch(`/tasks/${taskId}/entities/${entityId}/delete`, { method: 'POST' });
+        openTask(taskId);
+        loadTasks();
+      });
+    });
+    taskDetailDialog.showModal();
+  }
+
+  taskEntityForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!currentTaskId) return;
+    const formData = new FormData(taskEntityForm);
+    const toAttach = [];
+    formData.getAll('qual_steps_edit').forEach((val) => {
+      toAttach.push({ type: 'qualification_step', id: String(val) });
+    });
+    formData.getAll('doe_ids_edit').forEach((val) => {
+      toAttach.push({ type: 'doe', id: String(val) });
+    });
+    formData.getAll('report_ids_edit').forEach((val) => {
+      toAttach.push({ type: 'report', id: String(val), signature: '1' });
+    });
+    if (!toAttach.length) return;
+    const requests = toAttach.map((item) => {
+      const payload = new URLSearchParams();
+      payload.set('entity_type', item.type);
+      payload.set('entity_id', item.id);
+      if (item.signature) payload.set('signature_required', item.signature);
+      return fetch(`/tasks/${currentTaskId}/entities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: payload
+      });
+    });
+    await Promise.allSettled(requests);
+    openTask(currentTaskId);
+    loadTasks();
+  });
+
+  calendarToggle?.addEventListener('click', () => {
+    calendarMenu?.classList.toggle('is-open');
+  });
+
+  taskDetailDialog?.addEventListener('close', () => {
+    calendarMenu?.classList.remove('is-open');
+  });
+
+  board?.querySelectorAll('.kanban-column').forEach((column) => {
+    column.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      column.classList.add('is-drop-target');
+    });
+    column.addEventListener('dragleave', () => {
+      column.classList.remove('is-drop-target');
+    });
+    column.addEventListener('drop', async (event) => {
+      event.preventDefault();
+      column.classList.remove('is-drop-target');
+      const taskId = event.dataTransfer?.getData('text/plain');
+      const status = column.dataset.status;
+      if (!taskId || !status) return;
+      const payload = new URLSearchParams();
+      payload.set('status', status);
+      const resp = await fetch(`/tasks/${taskId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: payload
+      });
+      if (!resp.ok) return;
+      loadTasks();
+    });
+  });
+
+  const taskCreateForm = document.getElementById('taskCreateForm');
+  taskCreateForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!board) return;
+    const experimentId = board.dataset.experimentId;
+    const formData = new FormData(taskCreateForm);
+    const payload = new URLSearchParams(formData);
+    const resp = await fetch(`/experiments/${experimentId}/tasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: payload
+    });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    const taskId = data?.id;
+    if (taskId) {
+      const qualSteps = formData.getAll('qual_steps').map((val) => String(val));
+      const doeIds = formData.getAll('doe_ids').map((val) => String(val));
+      const attaches = [];
+      qualSteps.forEach((step) => {
+        const attach = new URLSearchParams();
+        attach.set('entity_type', 'qualification_step');
+        attach.set('entity_id', step);
+        attaches.push(fetch(`/tasks/${taskId}/entities`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: attach
+        }));
+      });
+      doeIds.forEach((doeId) => {
+        const attach = new URLSearchParams();
+        attach.set('entity_type', 'doe');
+        attach.set('entity_id', doeId);
+        attaches.push(fetch(`/tasks/${taskId}/entities`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: attach
+        }));
+      });
+      if (attaches.length) {
+        await Promise.allSettled(attaches);
+      }
+    }
+    taskCreateForm.reset();
+    taskCreateDialog?.close();
+    loadTasks();
+  });
+
+  loadTasks();
 </script>
 <%- include('partials/foot') %>

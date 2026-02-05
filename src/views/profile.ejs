@@ -49,6 +49,37 @@
   </dialog>
 
   <div class="card">
+    <h2 class="card-title">My Tasks</h2>
+    <table class="pure-table table-compact">
+      <thead>
+        <tr>
+          <th>Task</th>
+          <th>Experiment</th>
+          <th>Status</th>
+          <th>Due</th>
+          <th>%</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!tasks || tasks.length === 0) { %>
+          <tr>
+            <td colspan="5">No tasks assigned.</td>
+          </tr>
+        <% } %>
+        <% tasks.forEach((task) => { %>
+          <tr>
+            <td><%= task.title %></td>
+            <td><a href="/experiments/<%= task.experiment_id %>"><%- formatInline(task.experiment_name) %></a></td>
+            <td><%= task.status %></td>
+            <td><%= task.due_at ? new Date(task.due_at).toLocaleDateString() : '-' %></td>
+            <td><%= typeof task.progress_percent === 'number' ? `${task.progress_percent}%` : '-' %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
     <h2 class="card-title">My Experiments</h2>
     <table class="pure-table table-compact">
       <thead>

@@ -1,0 +1,24 @@
+import type { Db } from "../db.js";
+
+export type MyTaskRow = {
+  task_id: number;
+  title: string;
+  status: string;
+  due_at: string | null;
+  experiment_id: number;
+  experiment_name: string;
+};
+
+// List tasks where the user is owner or assigned operator.
+export function listTasksForUser(db: Db, userId: number): MyTaskRow[] {
+  return db.prepare(
+    `SELECT t.id as task_id, t.title, t.status, t.due_at,
+            e.id as experiment_id, e.name as experiment_name
+     FROM tasks t
+     JOIN experiments e ON e.id = t.experiment_id
+     LEFT JOIN task_assignments a ON a.task_id = t.id
+     WHERE t.owner_user_id = ? OR a.user_id = ?
+     GROUP BY t.id
+     ORDER BY t.due_at IS NULL, t.due_at, t.id DESC`
+  ).all(userId, userId) as MyTaskRow[];
+}
