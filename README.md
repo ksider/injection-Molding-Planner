@@ -75,17 +75,11 @@ Planned: export data to CSV.
 ## Qualification (Scientific Molding)
 The qualification flow includes 6 steps based on scientific molding methodology:
 1) Rheology / Viscosity curve  
-   <img src="src/public/illustrations/step1_rheology.svg" alt="Step 1 illustration" width="320" />
 2) Cavity balance  
-   <img src="src/public/illustrations/step2_balance.svg" alt="Step 2 illustration" width="320" />
 3) Pressure drop  
-   <img src="src/public/illustrations/step3_pressure.svg" alt="Step 3 illustration" width="320" />
 4) Cosmetic process window  
-   <img src="src/public/illustrations/step4_window.svg" alt="Step 4 illustration" width="320" />
 5) Gate seal study  
-   <img src="src/public/illustrations/step5_gate.svg" alt="Step 5 illustration" width="320" />
 6) Cooling time optimization  
-   <img src="src/public/illustrations/step6_cooling.svg" alt="Step 6 illustration" width="320" />
 
 Reference book (Amazon search):
 - Robust Process Development and Scientific Molding (Suhas Kulkarni): https://a.co/d/aDv52KL
