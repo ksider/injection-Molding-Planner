@@ -57,8 +57,20 @@ Create a `.env` file based on `.env.example` and set:
 4) Configure factors, generate runlists, and enter run data.
 5) Review analysis (charts + heatmap + 3D when possible).
 6) Generate and edit reports (multiple reports per experiment).
+7) Track Tasks on a kanban board inside each experiment.
 
 Planned: export data to CSV.
+
+## Task Manager
+- Tasks live inside each experiment and are shown as a 4-column kanban (Init / In progress / Done / Failed).
+- Create a task with title, description, due date, and owner (defaults to the experiment owner).
+- Link tasks to entities:
+  - Qualification steps (1–6)
+  - DOE studies
+  - Reports (signature required)
+- Task progress is calculated from linked entities; tasks without entities are driven by manual status moves.
+- Reports can be signed inside the task popup (manager/engineer/admin).
+- Each task has calendar actions: download .ics or open a Google Calendar link.
 
 ## Qualification (Scientific Molding)
 The qualification flow includes 6 steps based on scientific molding methodology:
