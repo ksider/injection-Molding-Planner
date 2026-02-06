@@ -20,9 +20,6 @@ export function createProfileRouter(db: Db) {
       if (exp.status_done_manual === 1) {
         status = "done";
         statusLabel = "Done";
-      } else if (summaryCount >= 6) {
-        status = "done";
-        statusLabel = "Done";
       } else if (summaryCount > 0 || valueCount > 0) {
         status = "in_progress";
         statusLabel = "In progress";

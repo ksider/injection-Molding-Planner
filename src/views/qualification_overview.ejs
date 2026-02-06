@@ -13,9 +13,17 @@
       <% steps.forEach((step) => { const def = stepDefinitions.find((d) => d.step_number === step.step_number); const summary = summaryMap.get(step.step_number); %>
         <div class="qual-step-card">
           <div class="qual-step-header">
-            <div>
+            <div class="qual-step-title">
               <div class="badge">Step <%= step.step_number %></div>
-              <h3><%= def?.name || `Step ${step.step_number}` %></h3>
+              <div class="qual-step-title-row">
+                <div class="qual-step-icon">
+                  <img
+                    src="/illustrations/step<%= step.step_number %>_<%= step.step_number === 1 ? 'rheology' : step.step_number === 2 ? 'balance' : step.step_number === 3 ? 'pressure' : step.step_number === 4 ? 'window' : step.step_number === 5 ? 'gate' : 'cooling' %>_icon.svg"
+                    alt="Step <%= step.step_number %> icon"
+                  />
+                </div>
+                <h3><%= def?.name || `Step ${step.step_number}` %></h3>
+              </div>
             </div>
             <% const hasSummary = Boolean(summary); %>
             <span class="qual-status <%= hasSummary ? 'status-done' : '' %>"><%= hasSummary ? 'DONE' : step.status %></span>

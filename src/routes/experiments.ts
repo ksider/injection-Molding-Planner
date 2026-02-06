@@ -113,10 +113,8 @@ export function createExperimentsRouter(db: Db) {
     if (!experiment) return res.status(404).send("Experiment not found");
     const qualSummaries = listQualSummaries(db, experimentId);
     const summaryCount = qualSummaries.length;
-    const autoStatus =
-      summaryCount >= 6 ? "done" : summaryCount > 0 ? "in_progress" : "not_started";
-    const autoStatusLabel =
-      autoStatus === "done" ? "Done" : autoStatus === "in_progress" ? "In progress" : "Not started";
+    const autoStatus = summaryCount > 0 ? "in_progress" : "not_started";
+    const autoStatusLabel = autoStatus === "in_progress" ? "In progress" : "Not started";
     const manualDone = experiment.status_done_manual === 1;
     const status = manualDone ? "done" : autoStatus;
     const statusLabel = manualDone ? "Done" : autoStatusLabel;

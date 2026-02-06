@@ -1,0 +1,12 @@
+﻿<svg width="320" height="180" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="1" y="1" width="318" height="178" rx="18" fill="#FFF8F1" stroke="#E7D6C3" stroke-width="2"/>
+  <rect x="24" y="26" width="68" height="24" rx="12" fill="#F7D9C4"/>
+  <text x="58" y="43" text-anchor="middle" font-family="Trebuchet MS, sans-serif" font-size="12" fill="#8A4B2C">Step 5</text>
+  <text x="24" y="80" font-family="Trebuchet MS, sans-serif" font-size="16" fill="#1E1F24" font-weight="700">Gate Seal Study</text>
+  <rect x="52" y="112" width="216" height="40" rx="10" fill="#FFFFFF" stroke="#E7D6C3"/>
+  <rect x="70" y="118" width="40" height="28" rx="6" fill="#2C7EA0" opacity="0.6"/>
+  <rect x="110" y="124" width="90" height="16" rx="8" fill="#F2D3BE"/>
+  <circle cx="240" cy="132" r="12" fill="#F2D3BE" stroke="#2C7EA0" stroke-width="2"/>
+  <line x1="240" y1="132" x2="240" y2="124" stroke="#2C7EA0" stroke-width="2"/>
+  <line x1="240" y1="132" x2="246" y2="136" stroke="#2C7EA0" stroke-width="2"/>
+</svg>

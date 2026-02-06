@@ -67,6 +67,38 @@ sub {
   gap: 0.75rem;
 }
 
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--slate);
+}
+
+.breadcrumb-inline {
+  font-weight: 600;
+}
+
+.breadcrumb a {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb-sep {
+  opacity: 0.6;
+}
+
+.breadcrumb-current {
+  font-weight: 700;
+  color: var(--ink);
+}
+
 .nav-user {
   font-weight: 600;
   color: var(--slate);
@@ -1576,6 +1608,23 @@ table.pure-table {
   align-items: flex-start;
 }
 
+.qual-step-title {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.qual-step-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.qual-step-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .qual-status {
   font-size: 0.75rem;
   font-weight: 600;
@@ -1596,6 +1645,24 @@ table.pure-table {
   overflow-wrap: anywhere;
   word-break: break-word;
   max-width: 100%;
+}
+
+.qual-step-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+.qual-step-icon img {
+  width: 36px;
+  height: 36px;
+  display: block;
 }
 
 .save-status {

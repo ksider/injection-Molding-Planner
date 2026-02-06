@@ -13,10 +13,7 @@ export function createUsersRouter(db: Db) {
       const valueCount = Number(exp.qual_run_value_count || 0);
       let status = "not_started";
       let statusLabel = "Not started";
-      if (summaryCount >= 6) {
-        status = "done";
-        statusLabel = "Done";
-      } else if (summaryCount > 0 || valueCount > 0) {
+      if (summaryCount > 0 || valueCount > 0) {
         status = "in_progress";
         statusLabel = "In progress";
       }

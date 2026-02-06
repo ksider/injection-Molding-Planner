@@ -22,6 +22,7 @@ import { createQualificationRouter } from "./routes/qualification.js";
 import { createMachinesRouter } from "./routes/machines.js";
 import { createReportRouter } from "./routes/report.js";
 import { createUsersRouter } from "./routes/users.js";
+import { buildBreadcrumbs } from "./services/breadcrumbs.js";
 
 export function createApp() {
   const app = express();
@@ -94,6 +95,7 @@ app.use("/vendor", express.static(path.resolve(process.cwd(), "node_modules")));
 app.use(createHttpsRedirect(db));
 app.use((req, res, next) => {
   res.locals.currentUser = req.user ?? null;
+  res.locals.breadcrumbs = buildBreadcrumbs(db, req);
   next();
 });
 

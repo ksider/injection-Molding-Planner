@@ -1,5 +1,22 @@
 <nav class="top-nav">
-  <div class="nav-brand">IM Planner</div>
+  <div class="nav-brand">
+    <% if (breadcrumbs && breadcrumbs.length > 1) { %>
+      <div class="breadcrumb breadcrumb-inline">
+        <% breadcrumbs.forEach((crumb, index) => { %>
+          <% if (index > 0) { %>
+            <span class="breadcrumb-sep">/</span>
+          <% } %>
+          <% if (index < breadcrumbs.length - 1) { %>
+            <a href="<%= crumb.href %>"><%= crumb.label %></a>
+          <% } else { %>
+            <span class="breadcrumb-current"><%= crumb.label %></span>
+          <% } %>
+        <% }); %>
+      </div>
+    <% } else { %>
+      IM Planner
+    <% } %>
+  </div>
   <div class="nav-links">
     <a href="/">Experiments</a>
     <a href="/recipes">Recipes</a>
