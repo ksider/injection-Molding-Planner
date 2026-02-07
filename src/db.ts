@@ -402,6 +402,12 @@ function initDb(db: Db) {
   if (!hasColumn(db, "design_metadata", "doe_id")) {
     db.exec("ALTER TABLE design_metadata ADD COLUMN doe_id INTEGER");
   }
+  if (!hasColumn(db, "report_configs", "signed_at")) {
+    db.exec("ALTER TABLE report_configs ADD COLUMN signed_at TEXT");
+  }
+  if (!hasColumn(db, "report_configs", "signed_by_user_id")) {
+    db.exec("ALTER TABLE report_configs ADD COLUMN signed_by_user_id INTEGER");
+  }
   const designMetaInfo = db
     .prepare("PRAGMA table_info(design_metadata)")
     .all() as Array<{ name: string; pk: number }>;

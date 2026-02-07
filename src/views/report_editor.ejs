@@ -8,13 +8,16 @@
       </a>
       <div>
         <h1 class="card-title"><%- formatInline(reportConfig.name) %></h1>
-        <div class="small-note">Editable report document</div>
+        <div class="small-note"><%= reportConfig?.signed_at ? 'Signed report (read-only)' : 'Editable report document' %></div>
       </div>
       <div class="section-actions">
         <button class="pure-button pure-button-secondary" type="button" id="printReport">Export PDF</button>
         <button class="pure-button pure-button-primary" type="button" id="saveReport">Save</button>
       </div>
     </div>
+    <% if (reportConfig?.signed_at) { %>
+      <div class="auth-error">Signed report is read-only.</div>
+    <% } %>
     <div id="editorjs" class="editor-surface"></div>
     <div class="save-status small-note" id="saveStatus"></div>
   </div>
@@ -37,36 +40,7 @@
   const windowData = <%- JSON.stringify(report.qualification?.charts.processWindow || {}) %>;
 
   const ListTool = window.EditorjsList || window.List;
-
-  const editor = new EditorJS({
-    holder: 'editorjs',
-    data: editorData,
-    tools: {
-      header: {
-        class: Header,
-        inlineToolbar: true
-      },
-      list: {
-        class: ListTool,
-        inlineToolbar: true
-      },
-      table: {
-        class: Table,
-        inlineToolbar: true,
-        config: {
-          rows: 2,
-          cols: 2
-        }
-      },
-      image: {
-        class: SimpleImage,
-        inlineToolbar: true
-      },
-      delimiter: {
-        class: window.Delimiter || window.EditorjsDelimiter
-      }
-    }
-  });
+  const isSigned = <%= reportConfig?.signed_at ? 'true' : 'false' %>;
 
   const renderChartImage = (containerId, buildOption) => {
     const container = document.createElement('div');
@@ -86,30 +60,27 @@
     return url;
   };
 
-  const updateImageAfterHeader = async (headerText, imageUrl, captionText) => {
-    const data = await editor.save();
+  const injectImageAfterHeader = (data, headerText, imageUrl, captionText) => {
     const headerIndex = data.blocks.findIndex(
       (block) => block.type === 'header' && String(block.data?.text || '').includes(headerText)
     );
-    if (headerIndex === -1) return;
+    if (headerIndex === -1) return data;
+
     for (let i = headerIndex + 1; i < data.blocks.length; i += 1) {
       const block = data.blocks[i];
       if (block.type === 'image') {
-        const current = editor.blocks.getBlockByIndex(i);
-        if (current?.id) {
-          await editor.blocks.update(current.id, { url: imageUrl, caption: '' });
+        block.data = { ...(block.data || {}), url: imageUrl, caption: '' };
+        const next = data.blocks[i + 1];
+        if (!next || next.type !== 'paragraph') {
+          data.blocks.splice(i + 1, 0, { type: 'paragraph', data: { text: captionText } });
         }
-        // Ensure caption lives as a native paragraph block below the image.
-        const next = editor.blocks.getBlockByIndex(i + 1);
-        if (!next || next.name !== 'paragraph') {
-          await editor.blocks.insert('paragraph', { text: captionText }, {}, i + 1);
-        }
-        return;
+        return data;
       }
       if (block.type === 'header') break;
     }
-    await editor.blocks.insert('image', { url: imageUrl, caption: '' }, {}, headerIndex + 1);
-    await editor.blocks.insert('paragraph', { text: captionText }, {}, headerIndex + 2);
+    data.blocks.splice(headerIndex + 1, 0, { type: 'image', data: { url: imageUrl, caption: '' } });
+    data.blocks.splice(headerIndex + 2, 0, { type: 'paragraph', data: { text: captionText } });
+    return data;
   };
 
   const buildRheoOption = () => {
@@ -152,19 +123,55 @@
     };
   };
 
-  // Only auto-insert charts when the document is first generated.
+  let seedData = editorData;
   if (!hasSavedDoc) {
-    editor.isReady.then(() => {
-      const rheoUrl = renderChartImage('rheo', buildRheoOption);
-      const windowUrl = renderChartImage('window', buildWindowOption);
-      updateImageAfterHeader('4. Rheology', rheoUrl, 'Rheology curve');
-      updateImageAfterHeader('5. Process Window', windowUrl, 'Process window');
-    });
+    const rheoUrl = renderChartImage('rheo', buildRheoOption);
+    const windowUrl = renderChartImage('window', buildWindowOption);
+    seedData = injectImageAfterHeader(seedData, '4. Rheology', rheoUrl, 'Rheology curve');
+    seedData = injectImageAfterHeader(seedData, '5. Process Window', windowUrl, 'Process window');
+  }
+
+  const editor = new EditorJS({
+    holder: 'editorjs',
+    data: seedData,
+    readOnly: isSigned,
+    tools: {
+      header: {
+        class: Header,
+        inlineToolbar: true
+      },
+      list: {
+        class: ListTool,
+        inlineToolbar: true
+      },
+      table: {
+        class: Table,
+        inlineToolbar: true,
+        config: {
+          rows: 2,
+          cols: 2
+        }
+      },
+      image: {
+        class: SimpleImage,
+        inlineToolbar: true
+      },
+      delimiter: {
+        class: window.Delimiter || window.EditorjsDelimiter
+      }
+    }
+  });
+
+  const saveBtn = document.getElementById('saveReport');
+  if (isSigned) {
+    saveBtn?.setAttribute('disabled', 'true');
+    saveBtn?.classList.add('button-disabled');
   }
 
   const saveStatus = document.getElementById('saveStatus');
   const saveReport = document.getElementById('saveReport');
   saveReport?.addEventListener('click', async () => {
+    if (isSigned) return;
     saveStatus.textContent = 'Saving...';
     const data = await editor.save();
     const payload = new URLSearchParams();

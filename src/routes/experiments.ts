@@ -226,6 +226,9 @@ export function createExperimentsRouter(db: Db) {
     if (!existing || existing.experiment_id !== experimentId) {
       return res.status(404).send("Report not found");
     }
+    if (existing.signed_at) {
+      return res.status(403).json({ ok: false, message: "Signed report cannot be edited." });
+    }
     const nameRaw = String(req.body.name || "").trim();
     const executors = String(req.body.executors || "").trim() || null;
     const include = Array.isArray(req.body.include)

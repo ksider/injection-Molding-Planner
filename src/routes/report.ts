@@ -7,7 +7,15 @@ import {
   buildOutputsCsv,
   buildReportEditorSeed
 } from "../services/report_service.js";
-import { deleteReportConfig, getReportConfig, getReportDocument, upsertReportDocument } from "../repos/reports_repo.js";
+import {
+  deleteReportConfig,
+  getReportConfig,
+  getReportDocument,
+  signReportConfig,
+  unsignReportConfig,
+  upsertReportDocument
+} from "../repos/reports_repo.js";
+import { findUserById } from "../repos/users_repo.js";
 import { ensureExperimentAccess, ensureReportAccess } from "../middleware/experiment_access.js";
 
 const parseInclude = (raw: unknown) => {
@@ -83,7 +91,8 @@ export function createReportRouter(db: Db) {
       doeIds
     };
     const reportData = buildReport(db, config.experiment_id, options);
-    res.render("report", { report: reportData, options, reportConfig: config });
+    const signer = config.signed_by_user_id ? findUserById(db, config.signed_by_user_id) : null;
+    res.render("report", { report: reportData, options, reportConfig: config, signer });
   });
 
   router.get("/reports/:reportId/editor", (req, res) => {
@@ -138,6 +147,7 @@ export function createReportRouter(db: Db) {
     const reportId = Number(req.params.reportId);
     const config = getReportConfig(db, reportId);
     if (!config) return res.status(404).send("Report not found");
+    if (config.signed_at) return res.status(403).send("Report is signed and cannot be edited.");
     const contentJson = typeof req.body.content_json === "string" ? req.body.content_json : "";
     const htmlSnapshot = typeof req.body.html_snapshot === "string" ? req.body.html_snapshot : null;
     if (!contentJson) return res.status(400).send("Missing content");
@@ -152,8 +162,32 @@ export function createReportRouter(db: Db) {
     const reportId = Number(req.params.reportId);
     const config = getReportConfig(db, reportId);
     if (!config) return res.status(404).send("Report not found");
+    if (config.signed_at) return res.status(403).send("Signed report cannot be deleted.");
     deleteReportConfig(db, reportId);
     res.redirect(`/experiments/${config.experiment_id}`);
+  });
+
+  router.post("/reports/:reportId/sign", (req, res) => {
+    if (!hasRole(req, ["admin", "manager"])) {
+      return res.status(403).send("Forbidden");
+    }
+    const reportId = Number(req.params.reportId);
+    const config = getReportConfig(db, reportId);
+    if (!config) return res.status(404).send("Report not found");
+    if (!req.user?.id) return res.status(403).send("Forbidden");
+    signReportConfig(db, reportId, req.user.id);
+    res.redirect(`/reports/${reportId}`);
+  });
+
+  router.post("/reports/:reportId/unsign", (req, res) => {
+    if (!hasRole(req, ["admin", "manager"])) {
+      return res.status(403).send("Forbidden");
+    }
+    const reportId = Number(req.params.reportId);
+    const config = getReportConfig(db, reportId);
+    if (!config) return res.status(404).send("Report not found");
+    unsignReportConfig(db, reportId);
+    res.redirect(`/reports/${reportId}`);
   });
 
   router.get("/experiments/:id/report.csv", (req, res) => {

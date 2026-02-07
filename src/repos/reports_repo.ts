@@ -8,6 +8,8 @@ type ReportConfigRow = {
   include_json: string | null;
   doe_ids_json: string | null;
   created_at: string;
+  signed_at: string | null;
+  signed_by_user_id: number | null;
 };
 
 export function listReportConfigs(db: Db, experimentId: number): ReportConfigRow[] {
@@ -58,6 +60,18 @@ export function updateReportConfig(
     WHERE id = ?
     `
   ).run(data.name, data.executors, data.include_json, data.doe_ids_json, reportId);
+}
+
+export function signReportConfig(db: Db, reportId: number, userId: number) {
+  db.prepare(
+    "UPDATE report_configs SET signed_at = datetime('now'), signed_by_user_id = ? WHERE id = ?"
+  ).run(userId, reportId);
+}
+
+export function unsignReportConfig(db: Db, reportId: number) {
+  db.prepare(
+    "UPDATE report_configs SET signed_at = NULL, signed_by_user_id = NULL WHERE id = ?"
+  ).run(reportId);
 }
 
 type ReportDocumentRow = {
