@@ -18,31 +18,169 @@
     <% if (reportConfig?.signed_at) { %>
       <div class="auth-error">Signed report is read-only.</div>
     <% } %>
-    <div id="editorjs" class="editor-surface"></div>
+    <div class="editor-toolbar" id="editorToolbar">
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="undo" title="Undo"><span class="material-symbols-rounded">undo</span></button>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="redo" title="Redo"><span class="material-symbols-rounded">redo</span></button>
+      <span class="toolbar-sep" aria-hidden="true"></span>
+      <select class="toolbar-select" id="fontFamilySelect" title="Font family">
+        <option value="">Font</option>
+        <option value="Trebuchet MS">Trebuchet</option>
+        <option value="Georgia">Georgia</option>
+        <option value="Arial">Arial</option>
+        <option value="Courier New">Courier</option>
+      </select>
+      <select class="toolbar-select" id="fontSizeSelect" title="Font size">
+        <option value="">Size</option>
+        <option value="12px">12</option>
+        <option value="14px">14</option>
+        <option value="16px">16</option>
+        <option value="18px">18</option>
+        <option value="20px">20</option>
+        <option value="24px">24</option>
+        <option value="28px">28</option>
+      </select>
+      <select class="toolbar-select" id="lineHeightSelect" title="Line height">
+        <option value="">Line</option>
+        <option value="1.2">1.2</option>
+        <option value="1.35">1.35</option>
+        <option value="1.5">1.5</option>
+        <option value="1.65">1.65</option>
+        <option value="1.8">1.8</option>
+        <option value="2">2</option>
+      </select>
+      <select class="toolbar-select" id="textPresetSelect" title="Text style preset">
+        <option value="">Preset</option>
+        <option value="body">Body</option>
+        <option value="subtitle">Subtitle</option>
+        <option value="note">Note</option>
+        <option value="emphasis">Emphasis</option>
+      </select>
+      <span class="toolbar-sep" aria-hidden="true"></span>
+      <button class="pure-button button-sm" type="button" data-cmd="h1">H1</button>
+      <button class="pure-button button-sm" type="button" data-cmd="h2">H2</button>
+      <button class="pure-button button-sm" type="button" data-cmd="h3">H3</button>
+      <span class="toolbar-sep" aria-hidden="true"></span>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="bold" title="Bold"><span class="material-symbols-rounded">format_bold</span></button>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="italic" title="Italic"><span class="material-symbols-rounded">format_italic</span></button>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="underline" title="Underline"><span class="material-symbols-rounded">format_underlined</span></button>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="strike" title="Strike"><span class="material-symbols-rounded">strikethrough_s</span></button>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="highlight" title="Highlight"><span class="material-symbols-rounded">ink_highlighter</span></button>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="superscript" title="Superscript"><span class="material-symbols-rounded">superscript</span></button>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="subscript" title="Subscript"><span class="material-symbols-rounded">subscript</span></button>
+      <span class="toolbar-sep" aria-hidden="true"></span>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="bullet" title="Bullet list"><span class="material-symbols-rounded">format_list_bulleted</span></button>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="ordered" title="Ordered list"><span class="material-symbols-rounded">format_list_numbered</span></button>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="checklist" title="Checklist"><span class="material-symbols-rounded">checklist</span></button>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="quote" title="Quote"><span class="material-symbols-rounded">format_quote</span></button>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="code" title="Code block"><span class="material-symbols-rounded">code_blocks</span></button>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="hr" title="Divider"><span class="material-symbols-rounded">horizontal_rule</span></button>
+      <span class="toolbar-sep" aria-hidden="true"></span>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="align-left" title="Align left"><span class="material-symbols-rounded">format_align_left</span></button>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="align-center" title="Align center"><span class="material-symbols-rounded">format_align_center</span></button>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="align-right" title="Align right"><span class="material-symbols-rounded">format_align_right</span></button>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="align-justify" title="Justify"><span class="material-symbols-rounded">format_align_justify</span></button>
+      <span class="toolbar-sep" aria-hidden="true"></span>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="link" title="Link"><span class="material-symbols-rounded">link</span></button>
+      <button class="pure-button button-sm icon-only" type="button" data-cmd="image" title="Image"><span class="material-symbols-rounded">image</span></button>
+      <div class="image-tools toolbar-conditional" id="imageToolsGroup" title="Image tools">
+        <button class="pure-button button-sm image-op" type="button" data-cmd="image-width-25" title="Image width 25%">25%</button>
+        <button class="pure-button button-sm image-op" type="button" data-cmd="image-width-50" title="Image width 50%">50%</button>
+        <button class="pure-button button-sm image-op" type="button" data-cmd="image-width-75" title="Image width 75%">75%</button>
+        <button class="pure-button button-sm image-op" type="button" data-cmd="image-width-100" title="Image width 100%">100%</button>
+        <button class="pure-button button-sm image-op" type="button" data-cmd="image-align-left" title="Align image left">L</button>
+        <button class="pure-button button-sm image-op" type="button" data-cmd="image-align-center" title="Align image center">C</button>
+        <button class="pure-button button-sm image-op" type="button" data-cmd="image-align-right" title="Align image right">R</button>
+        <button class="pure-button button-sm image-op danger" type="button" data-cmd="image-delete" title="Delete image">Del</button>
+      </div>
+      <div class="table-tools" title="Table tools">
+        <button class="pure-button button-sm icon-only" type="button" id="tablePickerToggle" title="Insert table">
+          <span class="material-symbols-rounded">table</span>
+        </button>
+        <div class="table-picker" id="tablePicker" hidden>
+          <div class="table-picker-label" id="tablePickerLabel">3 x 3</div>
+          <div class="table-picker-grid" id="tablePickerGrid"></div>
+        </div>
+        <div class="table-ops toolbar-conditional" id="tableOpsGroup">
+          <button class="pure-button button-sm table-op" type="button" data-cmd="table-row-add" title="Add row">R+</button>
+          <button class="pure-button button-sm table-op" type="button" data-cmd="table-row-del" title="Delete row">R-</button>
+          <button class="pure-button button-sm table-op" type="button" data-cmd="table-col-add" title="Add column">C+</button>
+          <button class="pure-button button-sm table-op" type="button" data-cmd="table-col-del" title="Delete column">C-</button>
+          <button class="pure-button button-sm table-op danger" type="button" data-cmd="table-del" title="Delete table">Del</button>
+        </div>
+      </div>
+    </div>
+    <div id="editorRoot" class="editor-surface"></div>
     <div class="save-status small-note" id="saveStatus"></div>
   </div>
 </div>
 
-<script src="/vendor/@editorjs/editorjs/dist/editorjs.umd.js"></script>
-<script src="/vendor/@editorjs/header/dist/header.umd.js"></script>
-<script src="/vendor/@editorjs/list/dist/editorjs-list.umd.js"></script>
-<script src="/vendor/@editorjs/table/dist/table.umd.js"></script>
-<script src="/vendor/@editorjs/simple-image/dist/simple-image.umd.js"></script>
-<script src="/vendor/@editorjs/delimiter/dist/delimiter.umd.js"></script>
 <script src="/vendor/echarts/dist/echarts.min.js"></script>
 
-<script>
+<script type="module">
+  import { Editor } from 'https://esm.sh/@tiptap/core@3.19.0';
+  import StarterKit from 'https://esm.sh/@tiptap/starter-kit@3.19.0';
+  import Underline from 'https://esm.sh/@tiptap/extension-underline@3.19.0';
+  import Link from 'https://esm.sh/@tiptap/extension-link@3.19.0';
+  import Image from 'https://esm.sh/@tiptap/extension-image@3.19.0';
+  import TextAlign from 'https://esm.sh/@tiptap/extension-text-align@3.19.0';
+  import { Table } from 'https://esm.sh/@tiptap/extension-table@3.19.0';
+  import TableRow from 'https://esm.sh/@tiptap/extension-table-row@3.19.0';
+  import TableHeader from 'https://esm.sh/@tiptap/extension-table-header@3.19.0';
+  import TableCell from 'https://esm.sh/@tiptap/extension-table-cell@3.19.0';
+  import TaskList from 'https://esm.sh/@tiptap/extension-task-list@3.19.0';
+  import TaskItem from 'https://esm.sh/@tiptap/extension-task-item@3.19.0';
+  import Superscript from 'https://esm.sh/@tiptap/extension-superscript@3.19.0';
+  import Subscript from 'https://esm.sh/@tiptap/extension-subscript@3.19.0';
+  import Highlight from 'https://esm.sh/@tiptap/extension-highlight@3.19.0';
+  import { TextStyle, FontSize, LineHeight } from 'https://esm.sh/@tiptap/extension-text-style@3.19.0';
+  import { FontFamily } from 'https://esm.sh/@tiptap/extension-font-family@3.19.0';
+
   // Seed data is produced on the server from the report content. This keeps the
   // editor structure stable and predictable.
   const editorData = <%- JSON.stringify(editorData) %>;
   const hasSavedDoc = <%= hasSavedDoc ? 'true' : 'false' %>;
+  const htmlSnapshot = <%- JSON.stringify(htmlSnapshot || '') %>;
   const rheoData = <%- JSON.stringify(report.qualification?.charts.rheology || []) %>;
   const windowData = <%- JSON.stringify(report.qualification?.charts.processWindow || {}) %>;
-
-  const ListTool = window.EditorjsList || window.List;
   const isSigned = <%= reportConfig?.signed_at ? 'true' : 'false' %>;
 
-  const renderChartImage = (containerId, buildOption) => {
+  const ReportImage = Image.extend({
+    addAttributes() {
+      return {
+        ...this.parent?.(),
+        width: {
+          default: null,
+          parseHTML: (element) => element.getAttribute('data-width'),
+          renderHTML: (attributes) => (attributes.width ? { 'data-width': attributes.width } : {})
+        },
+        align: {
+          default: null,
+          parseHTML: (element) => element.getAttribute('data-align'),
+          renderHTML: (attributes) => (attributes.align ? { 'data-align': attributes.align } : {})
+        }
+      };
+    }
+  });
+
+  const escapeHtml = (value) =>
+    String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+
+  const allowInlineTags = (value) =>
+    String(value || '')
+      .replace(/&lt;(\/?)(sup|sub|b|strong|i|em|u|s|strike|small|mark|code)&gt;/gi, '<$1$2>')
+      .replace(/&amp;lt;(\/?)(sup|sub|b|strong|i|em|u|s|strike|small|mark|code)&amp;gt;/gi, '<$1$2>')
+      .replace(/&lt;br\s*\/?&gt;/gi, '<br>')
+      .replace(/&amp;lt;br\s*\/?&amp;gt;/gi, '<br>');
+
+  const safeInlineHtml = (value) => allowInlineTags(escapeHtml(value));
+  const normalizeSavedHtmlInlineTags = (value) => allowInlineTags(String(value || ''));
+
+  const renderChartImage = (buildOption) => {
     const container = document.createElement('div');
     container.style.width = '640px';
     container.style.height = '360px';
@@ -81,6 +219,69 @@
     data.blocks.splice(headerIndex + 1, 0, { type: 'image', data: { url: imageUrl, caption: '' } });
     data.blocks.splice(headerIndex + 2, 0, { type: 'paragraph', data: { text: captionText } });
     return data;
+  };
+
+  const isTipTapDoc = (value) =>
+    value && typeof value === 'object' && value.type === 'doc' && Array.isArray(value.content);
+
+  const renderListItems = (items, ordered) => {
+    if (!Array.isArray(items) || !items.length) return '';
+    const tag = ordered ? 'ol' : 'ul';
+    const list = items
+      .map((item) => {
+        if (typeof item === 'string') return `<li>${safeInlineHtml(item)}</li>`;
+        if (!item || typeof item !== 'object') return '<li></li>';
+        const text = safeInlineHtml(item.content || '');
+        const sub = item.items?.length
+          ? renderListItems(item.items, item.meta?.counterType === 'numeric')
+          : '';
+        return `<li>${text}${sub}</li>`;
+      })
+      .join('');
+    return `<${tag}>${list}</${tag}>`;
+  };
+
+  const blocksToHtml = (blocks) => {
+    if (!Array.isArray(blocks)) return '<p>-</p>';
+    return blocks
+      .map((block) => {
+        const type = String(block?.type || '');
+        const data = block?.data || {};
+        if (type === 'header') {
+          const level = Number.isFinite(Number(data.level)) ? Math.max(1, Math.min(4, Number(data.level))) : 2;
+          return `<h${level}>${safeInlineHtml(data.text || '')}</h${level}>`;
+        }
+        if (type === 'paragraph') {
+          return `<p>${safeInlineHtml(data.text || '')}</p>`;
+        }
+        if (type === 'list') {
+          const ordered = data.style === 'ordered';
+          const html = renderListItems(data.items || [], ordered);
+          return html || '<p>-</p>';
+        }
+        if (type === 'table') {
+          const rows = Array.isArray(data.content) ? data.content : [];
+          const body = rows
+            .map((row) => {
+              const cols = Array.isArray(row) ? row : [];
+              const tds = cols.map((cell) => `<td>${safeInlineHtml(cell)}</td>`).join('');
+              return `<tr>${tds}</tr>`;
+            })
+            .join('');
+          return `<table><tbody>${body}</tbody></table>`;
+        }
+        if (type === 'image') {
+          const src = escapeHtml(data.url || '');
+          const caption = safeInlineHtml(data.caption || '');
+          if (!src) return '';
+          return `<p><img src="${src}" alt="${caption}" /></p>${caption ? `<p><em>${caption}</em></p>` : ''}`;
+        }
+        if (type === 'delimiter') {
+          return '<hr />';
+        }
+        return `<p>${safeInlineHtml(data.text || '')}</p>`;
+      })
+      .join('');
   };
 
   const buildRheoOption = () => {
@@ -123,44 +324,351 @@
     };
   };
 
-  let seedData = editorData;
-  if (!hasSavedDoc) {
-    const rheoUrl = renderChartImage('rheo', buildRheoOption);
-    const windowUrl = renderChartImage('window', buildWindowOption);
-    seedData = injectImageAfterHeader(seedData, '4. Rheology', rheoUrl, 'Rheology curve');
-    seedData = injectImageAfterHeader(seedData, '5. Process Window', windowUrl, 'Process window');
-  }
+  const buildInitialContent = () => {
+    if (htmlSnapshot) return normalizeSavedHtmlInlineTags(htmlSnapshot);
+    if (isTipTapDoc(editorData)) return editorData;
+    let seedData = editorData;
+    const isEditorJsBlocks = seedData && typeof seedData === 'object' && Array.isArray(seedData.blocks);
+    if (isEditorJsBlocks && !hasSavedDoc) {
+      const rheoUrl = renderChartImage(buildRheoOption);
+      const windowUrl = renderChartImage(buildWindowOption);
+      seedData = injectImageAfterHeader(seedData, '4. Rheology', rheoUrl, 'Rheology curve');
+      seedData = injectImageAfterHeader(seedData, '5. Process Window', windowUrl, 'Process window');
+    }
+    if (isEditorJsBlocks) {
+      return blocksToHtml(seedData.blocks);
+    }
+    return '<p>-</p>';
+  };
 
-  const editor = new EditorJS({
-    holder: 'editorjs',
-    data: seedData,
-    readOnly: isSigned,
-    tools: {
-      header: {
-        class: Header,
-        inlineToolbar: true
-      },
-      list: {
-        class: ListTool,
-        inlineToolbar: true
-      },
-      table: {
-        class: Table,
-        inlineToolbar: true,
-        config: {
-          rows: 2,
-          cols: 2
-        }
-      },
-      image: {
-        class: SimpleImage,
-        inlineToolbar: true
-      },
-      delimiter: {
-        class: window.Delimiter || window.EditorjsDelimiter
+  const editor = new Editor({
+    element: document.getElementById('editorRoot'),
+    editable: !isSigned,
+    extensions: [
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3, 4] }
+      }),
+      Underline,
+      TextStyle,
+      FontFamily,
+      FontSize,
+      LineHeight,
+      Superscript,
+      Subscript,
+      Highlight.configure({ multicolor: true }),
+      Link.configure({
+        openOnClick: true
+      }),
+      ReportImage.configure({
+        allowBase64: true
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph']
+      }),
+      TaskList,
+      TaskItem.configure({
+        nested: true
+      }),
+      Table.configure({
+        resizable: true
+      }),
+      TableRow,
+      TableHeader,
+      TableCell
+    ],
+    content: buildInitialContent()
+  });
+
+  const execCommand = (command) => {
+    if (!editor || isSigned) return;
+    const chain = editor.chain().focus();
+    if (command === 'h1') chain.toggleHeading({ level: 1 }).run();
+    if (command === 'h2') chain.toggleHeading({ level: 2 }).run();
+    if (command === 'h3') chain.toggleHeading({ level: 3 }).run();
+    if (command === 'bold') chain.toggleBold().run();
+    if (command === 'italic') chain.toggleItalic().run();
+    if (command === 'underline') chain.toggleUnderline().run();
+    if (command === 'strike') chain.toggleStrike().run();
+    if (command === 'highlight') chain.toggleHighlight().run();
+    if (command === 'superscript') chain.toggleSuperscript().run();
+    if (command === 'subscript') chain.toggleSubscript().run();
+    if (command === 'bullet') chain.toggleBulletList().run();
+    if (command === 'ordered') chain.toggleOrderedList().run();
+    if (command === 'checklist') chain.toggleTaskList().run();
+    if (command === 'quote') chain.toggleBlockquote().run();
+    if (command === 'code') chain.toggleCodeBlock().run();
+    if (command === 'align-left') chain.setTextAlign('left').run();
+    if (command === 'align-center') chain.setTextAlign('center').run();
+    if (command === 'align-right') chain.setTextAlign('right').run();
+    if (command === 'align-justify') chain.setTextAlign('justify').run();
+    if (command === 'hr') chain.setHorizontalRule().run();
+    if (command === 'undo') chain.undo().run();
+    if (command === 'redo') chain.redo().run();
+    if (command === 'table') chain.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+    if (command === 'table-row-add') chain.addRowAfter().run();
+    if (command === 'table-row-del') chain.deleteRow().run();
+    if (command === 'table-col-add') chain.addColumnAfter().run();
+    if (command === 'table-col-del') chain.deleteColumn().run();
+    if (command === 'table-del') chain.deleteTable().run();
+    if (command === 'link') {
+      const previous = editor.getAttributes('link').href || '';
+      const href = window.prompt('Link URL', previous);
+      if (href === null) return;
+      if (href.trim() === '') {
+        chain.extendMarkRange('link').unsetLink().run();
+      } else {
+        chain.extendMarkRange('link').setLink({ href: href.trim() }).run();
       }
     }
+    if (command === 'image') {
+      const src = window.prompt('Image URL');
+      if (!src) return;
+      chain.setImage({ src: src.trim() }).run();
+    }
+    if (command === 'image-width-25') chain.updateAttributes('image', { width: '25%' }).run();
+    if (command === 'image-width-50') chain.updateAttributes('image', { width: '50%' }).run();
+    if (command === 'image-width-75') chain.updateAttributes('image', { width: '75%' }).run();
+    if (command === 'image-width-100') chain.updateAttributes('image', { width: '100%' }).run();
+    if (command === 'image-align-left') chain.updateAttributes('image', { align: 'left' }).run();
+    if (command === 'image-align-center') chain.updateAttributes('image', { align: 'center' }).run();
+    if (command === 'image-align-right') chain.updateAttributes('image', { align: 'right' }).run();
+    if (command === 'image-delete' && editor.isActive('image')) chain.deleteSelection().run();
+  };
+
+  document.querySelectorAll('#editorToolbar [data-cmd]').forEach((button) => {
+    button.addEventListener('click', () => execCommand(button.dataset.cmd || ''));
   });
+
+  const fontFamilySelect = document.getElementById('fontFamilySelect');
+  const fontSizeSelect = document.getElementById('fontSizeSelect');
+  const lineHeightSelect = document.getElementById('lineHeightSelect');
+  const textPresetSelect = document.getElementById('textPresetSelect');
+
+  const setMarkState = (mark, enabled) => {
+    const active = editor.isActive(mark);
+    if (enabled !== active) {
+      const cmd = `toggle${mark.charAt(0).toUpperCase()}${mark.slice(1)}`;
+      if (editor.chain().focus()[cmd]) editor.chain().focus()[cmd]().run();
+    }
+  };
+
+  const applyPreset = (preset) => {
+    if (!preset || isSigned) return;
+    if (preset === 'body') {
+      editor.chain().focus().setParagraph().setFontSize('16px').setLineHeight('1.5').run();
+      setMarkState('bold', false);
+      setMarkState('italic', false);
+      setMarkState('underline', false);
+      setMarkState('highlight', false);
+    }
+    if (preset === 'subtitle') {
+      editor.chain().focus().setHeading({ level: 3 }).setFontSize('20px').setLineHeight('1.35').run();
+      setMarkState('bold', true);
+      setMarkState('italic', false);
+      setMarkState('underline', false);
+      setMarkState('highlight', false);
+    }
+    if (preset === 'note') {
+      editor.chain().focus().setParagraph().setFontSize('15px').setLineHeight('1.65').run();
+      setMarkState('bold', false);
+      setMarkState('italic', true);
+      setMarkState('underline', false);
+      setMarkState('highlight', false);
+    }
+    if (preset === 'emphasis') {
+      editor.chain().focus().setParagraph().setFontSize('18px').setLineHeight('1.5').run();
+      setMarkState('bold', true);
+      setMarkState('italic', false);
+      setMarkState('underline', true);
+      setMarkState('highlight', true);
+    }
+  };
+
+  fontFamilySelect?.addEventListener('change', () => {
+    if (isSigned) return;
+    const value = fontFamilySelect.value;
+    const chain = editor.chain().focus();
+    if (!value) chain.unsetFontFamily().run();
+    else chain.setFontFamily(value).run();
+  });
+
+  fontSizeSelect?.addEventListener('change', () => {
+    if (isSigned) return;
+    const value = fontSizeSelect.value;
+    const chain = editor.chain().focus();
+    if (!value) chain.unsetFontSize().run();
+    else chain.setFontSize(value).run();
+  });
+
+  lineHeightSelect?.addEventListener('change', () => {
+    if (isSigned) return;
+    const value = lineHeightSelect.value;
+    const chain = editor.chain().focus();
+    if (!value) chain.unsetLineHeight().run();
+    else chain.setLineHeight(value).run();
+  });
+
+  textPresetSelect?.addEventListener('change', () => {
+    applyPreset(textPresetSelect.value);
+    textPresetSelect.value = '';
+  });
+
+  const setSelectValueSafe = (selectEl, value) => {
+    if (!selectEl) return;
+    if (!value) {
+      selectEl.value = '';
+      return;
+    }
+    const options = Array.from(selectEl.options).map((opt) => opt.value);
+    selectEl.value = options.includes(value) ? value : '';
+  };
+
+  const normalizeFontFamily = (raw) => {
+    if (!raw) return '';
+    const first = String(raw).split(',')[0]?.trim().replace(/^['"]|['"]$/g, '') || '';
+    const map = {
+      'Trebuchet MS': 'Trebuchet MS',
+      Georgia: 'Georgia',
+      Arial: 'Arial',
+      'Courier New': 'Courier New'
+    };
+    return map[first] || '';
+  };
+
+  const normalizeLineHeight = (raw, fontSizePx) => {
+    if (!raw) return '';
+    const text = String(raw).trim().toLowerCase();
+    if (!text || text === 'normal') return '';
+    if (text.endsWith('px') && Number.isFinite(fontSizePx) && fontSizePx > 0) {
+      const px = Number.parseFloat(text);
+      if (!Number.isFinite(px)) return '';
+      const ratio = px / fontSizePx;
+      const allowed = ['1.2', '1.35', '1.5', '1.65', '1.8', '2'];
+      const nearest = allowed
+        .map((v) => Number(v))
+        .reduce((best, cur) => (Math.abs(cur - ratio) < Math.abs(best - ratio) ? cur : best), 1.5);
+      return String(nearest);
+    }
+    return text;
+  };
+
+  const readSelectionComputedStyle = () => {
+    const sel = window.getSelection();
+    const node = sel?.anchorNode || null;
+    const el = node && node.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
+    if (!el || !(el instanceof Element)) return null;
+    const style = window.getComputedStyle(el);
+    const fontSizeRaw = style.fontSize || '';
+    const fontSizeNum = fontSizeRaw.endsWith('px') ? Number.parseFloat(fontSizeRaw) : Number.NaN;
+    return {
+      fontFamily: normalizeFontFamily(style.fontFamily),
+      fontSize: fontSizeRaw && fontSizeRaw.endsWith('px') ? `${Math.round(fontSizeNum)}px` : '',
+      lineHeight: normalizeLineHeight(style.lineHeight, fontSizeNum)
+    };
+  };
+
+  const syncTextControlsFromSelection = () => {
+    if (!editor) return;
+    const textStyleAttrs = editor.getAttributes('textStyle') || {};
+    const paragraphAttrs = editor.getAttributes('paragraph') || {};
+    const headingAttrs = editor.getAttributes('heading') || {};
+    const computed = readSelectionComputedStyle();
+
+    const fontFamily = textStyleAttrs.fontFamily || computed?.fontFamily || '';
+    const fontSize = textStyleAttrs.fontSize || computed?.fontSize || '';
+    const lineHeight = textStyleAttrs.lineHeight || paragraphAttrs.lineHeight || headingAttrs.lineHeight || computed?.lineHeight || '';
+
+    setSelectValueSafe(fontFamilySelect, fontFamily);
+    setSelectValueSafe(fontSizeSelect, fontSize);
+    setSelectValueSafe(lineHeightSelect, lineHeight);
+  };
+
+  const tablePicker = document.getElementById('tablePicker');
+  const tablePickerGrid = document.getElementById('tablePickerGrid');
+  const tablePickerLabel = document.getElementById('tablePickerLabel');
+  const tablePickerToggle = document.getElementById('tablePickerToggle');
+  const imageToolsGroup = document.getElementById('imageToolsGroup');
+  const tableOpsGroup = document.getElementById('tableOpsGroup');
+  const pickerRows = 10;
+  const pickerCols = 10;
+  let hoverRows = 3;
+  let hoverCols = 3;
+
+  const closeTablePicker = () => {
+    if (!tablePicker) return;
+    tablePicker.hidden = true;
+  };
+
+  const paintPicker = () => {
+    if (!tablePickerGrid) return;
+    tablePickerGrid.querySelectorAll('.table-picker-cell').forEach((cell) => {
+      const row = Number(cell.getAttribute('data-row') || '0');
+      const col = Number(cell.getAttribute('data-col') || '0');
+      cell.classList.toggle('active', row <= hoverRows && col <= hoverCols);
+    });
+    if (tablePickerLabel) tablePickerLabel.textContent = `${hoverRows} x ${hoverCols}`;
+  };
+
+  const insertTableBySize = (rows, cols) => {
+    if (!editor || isSigned) return;
+    editor.chain().focus().insertTable({ rows, cols, withHeaderRow: true }).run();
+  };
+
+  if (tablePickerGrid) {
+    for (let r = 1; r <= pickerRows; r += 1) {
+      for (let c = 1; c <= pickerCols; c += 1) {
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.className = 'table-picker-cell';
+        cell.setAttribute('data-row', String(r));
+        cell.setAttribute('data-col', String(c));
+        cell.setAttribute('aria-label', `Insert ${r} by ${c} table`);
+        cell.addEventListener('mouseenter', () => {
+          hoverRows = r;
+          hoverCols = c;
+          paintPicker();
+        });
+        cell.addEventListener('click', () => {
+          insertTableBySize(r, c);
+          closeTablePicker();
+        });
+        tablePickerGrid.appendChild(cell);
+      }
+    }
+    paintPicker();
+  }
+
+  tablePickerToggle?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (!tablePicker || isSigned) return;
+    tablePicker.hidden = !tablePicker.hidden;
+  });
+
+  tablePicker?.addEventListener('click', (event) => {
+    event.stopPropagation();
+  });
+
+  document.addEventListener('click', () => closeTablePicker());
+
+  const syncContextToolsVisibility = () => {
+    const imageActive = editor.isActive('image');
+    const tableActive = editor.isActive('table');
+    imageToolsGroup?.classList.toggle('is-visible', imageActive);
+    tableOpsGroup?.classList.toggle('is-visible', tableActive);
+  };
+
+  if (isSigned) {
+    document.getElementById('editorToolbar')?.classList.add('is-disabled');
+    document.querySelectorAll('#editorToolbar button').forEach((btn) => btn.setAttribute('disabled', 'true'));
+    document.querySelectorAll('#editorToolbar select').forEach((sel) => sel.setAttribute('disabled', 'true'));
+  } else {
+    syncTextControlsFromSelection();
+    editor.on('selectionUpdate', syncTextControlsFromSelection);
+    editor.on('transaction', syncTextControlsFromSelection);
+    syncContextToolsVisibility();
+    editor.on('selectionUpdate', syncContextToolsVisibility);
+    editor.on('transaction', syncContextToolsVisibility);
+  }
 
   const saveBtn = document.getElementById('saveReport');
   if (isSigned) {
@@ -168,22 +676,105 @@
     saveBtn?.classList.add('button-disabled');
   }
 
+  let saveInFlight = null;
+  let lastSavedFingerprint = JSON.stringify(editor.getJSON());
+  let pendingFingerprint = lastSavedFingerprint;
+  let autosaveTimer = null;
+  let isDirty = false;
+
   const saveStatus = document.getElementById('saveStatus');
   const saveReport = document.getElementById('saveReport');
-  saveReport?.addEventListener('click', async () => {
+
+  const setSavingUi = (saving, manual = false) => {
+    if (!saveBtn) return;
+    if (!manual) return;
+    if (saving) {
+      saveBtn.classList.add('is-saving');
+      saveBtn.textContent = 'Saving...';
+    } else {
+      saveBtn.classList.remove('is-saving');
+      saveBtn.textContent = 'Save';
+    }
+  };
+
+  const persistEditor = async (manual = false) => {
     if (isSigned) return;
-    saveStatus.textContent = 'Saving...';
-    const data = await editor.save();
+    const data = editor.getJSON();
+    const fingerprint = JSON.stringify(data);
+    pendingFingerprint = fingerprint;
+    if (!manual && fingerprint === lastSavedFingerprint) return;
+    if (saveInFlight) return;
+    if (manual) {
+      saveStatus.textContent = 'Saving...';
+    } else {
+      saveStatus.textContent = 'Autosaving...';
+    }
+    setSavingUi(true, manual);
+    const html = editor.getHTML();
     const payload = new URLSearchParams();
-    payload.set('content_json', JSON.stringify(data));
-    payload.set('html_snapshot', '');
-    const resp = await fetch('/reports/<%= reportConfig.id %>/editor', {
+    payload.set('content_json', fingerprint);
+    payload.set('html_snapshot', html);
+    saveInFlight = fetch('/reports/<%= reportConfig.id %>/editor', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: payload
     });
-    saveStatus.textContent = resp.ok ? 'Saved ✓' : 'Error saving';
-  });
+    const resp = await saveInFlight.catch(() => null);
+    saveInFlight = null;
+    if (resp?.ok) {
+      lastSavedFingerprint = fingerprint;
+      isDirty = false;
+      const now = new Date();
+      const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      saveStatus.textContent = manual ? `Saved at ${time}` : `Autosaved at ${time}`;
+    } else {
+      saveStatus.textContent = 'Error saving';
+    }
+    setSavingUi(false, manual);
+    if (pendingFingerprint !== lastSavedFingerprint) {
+      if (autosaveTimer) clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(() => persistEditor(false), 900);
+    }
+  };
+
+  saveReport?.addEventListener('click', () => persistEditor(true));
+
+  if (!isSigned) {
+    const scheduleAutosave = () => {
+      if (autosaveTimer) clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(() => persistEditor(false), 1200);
+    };
+
+    editor.on('update', () => {
+      isDirty = true;
+      scheduleAutosave();
+    });
+
+    editor.on('blur', () => {
+      if (!isDirty) return;
+      if (autosaveTimer) clearTimeout(autosaveTimer);
+      persistEditor(false);
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && isDirty) {
+        if (autosaveTimer) clearTimeout(autosaveTimer);
+        persistEditor(false);
+      }
+    });
+
+    window.setInterval(() => {
+      if (isDirty && !saveInFlight) {
+        persistEditor(false);
+      }
+    }, 5000);
+
+    window.addEventListener('beforeunload', () => {
+      if (isDirty) {
+        persistEditor(false);
+      }
+    });
+  }
 
   document.getElementById('printReport')?.addEventListener('click', () => window.print());
 </script>

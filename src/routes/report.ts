@@ -129,14 +129,22 @@ export function createReportRouter(db: Db) {
     const reportData = buildReport(db, config.experiment_id, options);
     const existingDoc = getReportDocument(db, reportId);
     const generatedAt = new Date().toLocaleString();
-    const seedData = existingDoc
-      ? JSON.parse(existingDoc.content_json)
-      : buildReportEditorSeed(reportData, generatedAt, config.name);
+    let seedData: unknown;
+    if (existingDoc) {
+      try {
+        seedData = JSON.parse(existingDoc.content_json);
+      } catch {
+        seedData = buildReportEditorSeed(reportData, generatedAt, config.name);
+      }
+    } else {
+      seedData = buildReportEditorSeed(reportData, generatedAt, config.name);
+    }
     res.render("report_editor", {
       report: reportData,
       reportConfig: config,
       editorData: seedData,
-      hasSavedDoc: Boolean(existingDoc)
+      hasSavedDoc: Boolean(existingDoc),
+      htmlSnapshot: existingDoc?.html_snapshot ?? ""
     });
   });
 

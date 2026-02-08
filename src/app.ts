@@ -66,7 +66,12 @@ function escapeHtml(value: unknown) {
 
 app.locals.formatInline = (value: unknown) => {
   const escaped = escapeHtml(value);
-  const withTags = escaped.replace(/&lt;(\/?)(sup|sub)&gt;/gi, "<$1$2>");
+  // Allow only a safe subset of inline tags (no attributes) after escaping.
+  const withTags = escaped
+    .replace(/&lt;(\/?)(sup|sub|b|strong|i|em|u|s|strike|small|mark|code)&gt;/gi, "<$1$2>")
+    .replace(/&amp;lt;(\/?)(sup|sub|b|strong|i|em|u|s|strike|small|mark|code)&amp;gt;/gi, "<$1$2>")
+    .replace(/&lt;br\s*\/?&gt;/gi, "<br>")
+    .replace(/&amp;lt;br\s*\/?&amp;gt;/gi, "<br>");
   return withTags
     .replace(/\s+(?=<(sup|sub)>)/gi, "")
     .replace(/<(sup|sub)>\s+/gi, "<$1>")
@@ -87,8 +92,9 @@ app.use(
   })
 );
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Report editor payloads can include embedded images (base64), so default 100kb is too low.
+app.use(express.json({ limit: "15mb" }));
+app.use(express.urlencoded({ extended: true, limit: "15mb", parameterLimit: 100000 }));
 app.use(express.static(publicPath));
 app.use("/vendor", express.static(path.resolve(process.cwd(), "node_modules")));
 
