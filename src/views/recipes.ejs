@@ -3,23 +3,17 @@
 <div class="container">
   <div class="card">
     <div class="recipes-header">
-      <div>
+      <div class="recipes-header-left">
         <h1 class="card-title">Saved Recipes</h1>
         <p class="small-note">Import BPACKs-style matrix CSV/TSV to populate recipe components.</p>
-      </div>
-      <div class="recipes-actions">
-        <input type="search" class="recipe-search" placeholder="Search recipes..." data-recipe-search>
         <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'engineer')) { %>
-          <form class="pure-form" action="/recipes/import" method="post" enctype="multipart/form-data">
+          <form class="pure-form recipes-import-file" action="/recipes/import" method="post" enctype="multipart/form-data">
             <input type="file" name="matrix" accept=".csv,.tsv,text/csv,text/tab-separated-values" required>
             <button class="icon-btn" type="submit" title="Import Recipes">Import</button>
           </form>
         <% } %>
-        <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager')) { %>
-          <form class="pure-form" action="/recipes/clear" method="post" onsubmit="return confirm('Delete all imported recipes?');">
-            <button class="icon-btn danger" type="submit" title="Delete All Recipes">Delete All</button>
-          </form>
-        <% } %>
+      </div>
+      <div class="recipes-actions">
       </div>
     </div>
     <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'engineer')) { %>
@@ -38,6 +32,14 @@
     <% if (recipes.length === 0) { %>
       <p class="small-note">No recipes loaded yet.</p>
     <% } else { %>
+      <div class="recipes-list-toolbar">
+        <input type="search" class="recipe-search" placeholder="Search recipes..." data-recipe-search>
+        <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager')) { %>
+          <form class="pure-form inline-form" action="/recipes/clear" method="post" onsubmit="return confirm('Delete all imported recipes?');">
+            <button class="icon-btn danger" type="submit" title="Delete All Recipes">Delete All</button>
+          </form>
+        <% } %>
+      </div>
       <div class="recipe-card-grid">
         <% recipes.forEach((recipe) => { %>
           <% const dataText = [recipe.name, recipe.description || '', ...recipe.components.map((c) => `${c.component_name} ${c.phr}`)].join(' ').toLowerCase(); %>

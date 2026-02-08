@@ -635,6 +635,23 @@ sub {
   margin-bottom: 0.75rem;
 }
 
+.recipes-header-left {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.recipes-import-file {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.recipe-import-text {
+  border-top: 1px dashed #e2d7c6;
+  padding-top: 0.75rem;
+}
+
 .recipes-actions {
   display: flex;
   align-items: center;
@@ -646,6 +663,14 @@ sub {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.recipes-list-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
 }
 
 .recipe-import-text {

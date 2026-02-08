@@ -54,65 +54,67 @@
       </div>
     </div>
 
-    <table class="pure-table table-compact library-table">
-      <thead>
-        <tr>
-          <th>Code</th>
-          <th>Label</th>
-          <th>Kind</th>
-          <th>Type</th>
-          <th>Unit</th>
-          <th>Group</th>
-          <th>Allowed (tags)</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="paramLibraryBody">
-        <% params.forEach((param) => { const groupKey = (param.group_label || 'General').toLowerCase().replace(/[^a-z0-9]+/g, '-'); %>
-          <tr
-            data-param-row
-            data-param-id="<%= param.id %>"
-            data-param-label="<%= param.label %>"
-            data-param-code="<%= param.code %>"
-            data-param-unit="<%= param.unit || '' %>"
-            data-param-group="<%= groupKey %>"
-            data-param-kind="<%= param.field_kind %>"
-            data-param-type="<%= param.field_type %>"
-            class="group-row group-<%= groupKey %>"
-          >
-            <td><input data-lib-code value="<%= param.code %>"></td>
-            <td><input data-lib-label value="<%- formatInline(param.label) %>"></td>
-            <td>
-              <span class="param-pill kind <%= param.field_kind === 'INPUT' ? 'kind-input' : 'kind-output' %>"><%= param.field_kind %></span>
-              <select data-lib-kind>
-                <option value="INPUT" <%= param.field_kind === 'INPUT' ? 'selected' : '' %>>INPUT</option>
-                <option value="OUTPUT" <%= param.field_kind === 'OUTPUT' ? 'selected' : '' %>>OUTPUT</option>
-              </select>
-            </td>
-            <td>
-              <span class="param-pill type type-<%= param.field_type %>"><%= param.field_type %></span>
-              <select data-lib-type>
-                <option value="number" <%= param.field_type === 'number' ? 'selected' : '' %>>number</option>
-                <option value="text" <%= param.field_type === 'text' ? 'selected' : '' %>>text</option>
-                <option value="tag" <%= param.field_type === 'tag' ? 'selected' : '' %>>tag</option>
-              </select>
-            </td>
-            <td><input data-lib-unit value="<%= param.unit || '' %>"></td>
-            <td><input data-lib-group value="<%= param.group_label || '' %>"></td>
-            <td>
-              <% let tags = ''; %>
-              <% if (param.allowed_values_json) { try { const parsed = JSON.parse(param.allowed_values_json); if (Array.isArray(parsed)) tags = parsed.join(', '); } catch {} } %>
-              <input data-lib-allowed value="<%= tags %>">
-            </td>
-            <td>
-              <button class="icon-button danger" type="button" data-delete-param title="Delete">
-                <span class="material-symbols-rounded" aria-hidden="true">delete</span>
-              </button>
-            </td>
+    <form class="pure-form" id="paramLibraryForm" autocomplete="off" onsubmit="return false;">
+      <table class="pure-table table-compact library-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Label</th>
+            <th>Kind</th>
+            <th>Type</th>
+            <th>Unit</th>
+            <th>Group</th>
+            <th>Allowed (tags)</th>
+            <th></th>
           </tr>
-        <% }); %>
-      </tbody>
-    </table>
+        </thead>
+        <tbody id="paramLibraryBody">
+          <% params.forEach((param) => { const groupKey = (param.group_label || 'General').toLowerCase().replace(/[^a-z0-9]+/g, '-'); %>
+            <tr
+              data-param-row
+              data-param-id="<%= param.id %>"
+              data-param-label="<%= param.label %>"
+              data-param-code="<%= param.code %>"
+              data-param-unit="<%= param.unit || '' %>"
+              data-param-group="<%= groupKey %>"
+              data-param-kind="<%= param.field_kind %>"
+              data-param-type="<%= param.field_type %>"
+              class="group-row group-<%= groupKey %>"
+            >
+              <td><input data-lib-code value="<%= param.code %>"></td>
+              <td><input data-lib-label value="<%- formatInline(param.label) %>"></td>
+              <td>
+                <span class="param-pill kind <%= param.field_kind === 'INPUT' ? 'kind-input' : 'kind-output' %>"><%= param.field_kind %></span>
+                <select data-lib-kind>
+                  <option value="INPUT" <%= param.field_kind === 'INPUT' ? 'selected' : '' %>>INPUT</option>
+                  <option value="OUTPUT" <%= param.field_kind === 'OUTPUT' ? 'selected' : '' %>>OUTPUT</option>
+                </select>
+              </td>
+              <td>
+                <span class="param-pill type type-<%= param.field_type %>"><%= param.field_type %></span>
+                <select data-lib-type>
+                  <option value="number" <%= param.field_type === 'number' ? 'selected' : '' %>>number</option>
+                  <option value="text" <%= param.field_type === 'text' ? 'selected' : '' %>>text</option>
+                  <option value="tag" <%= param.field_type === 'tag' ? 'selected' : '' %>>tag</option>
+                </select>
+              </td>
+              <td><input data-lib-unit value="<%= param.unit || '' %>"></td>
+              <td><input data-lib-group value="<%= param.group_label || '' %>"></td>
+              <td>
+                <% let tags = ''; %>
+                <% if (param.allowed_values_json) { try { const parsed = JSON.parse(param.allowed_values_json); if (Array.isArray(parsed)) tags = parsed.join(', '); } catch {} } %>
+                <input data-lib-allowed value="<%= tags %>">
+              </td>
+              <td>
+                <button class="icon-button danger" type="button" data-delete-param title="Delete">
+                  <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+                </button>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </form>
   </div>
 </div>
 
