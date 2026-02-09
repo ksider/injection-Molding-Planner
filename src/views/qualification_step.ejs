@@ -18,6 +18,14 @@
     <% } %>
   </div>
 
+  <%- include('partials/entity_notes', {
+    experimentId: experimentId,
+    entityType: 'qualification_step',
+    entityId: step.step_number,
+    title: `Step ${step.step_number} Notes`,
+    canWrite: currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'engineer')
+  }) %>
+
   <% if (step.step_number === 1) { %>
     <div class="card">
       <div class="card-header">

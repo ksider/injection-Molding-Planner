@@ -22,6 +22,7 @@ import { createQualificationRouter } from "./routes/qualification.js";
 import { createMachinesRouter } from "./routes/machines.js";
 import { createReportRouter } from "./routes/report.js";
 import { createUsersRouter } from "./routes/users.js";
+import { createNotesRouter } from "./routes/notes.js";
 import { buildBreadcrumbs } from "./services/breadcrumbs.js";
 
 export function createApp() {
@@ -134,6 +135,7 @@ app.use(createQualificationRouter(db));
 app.use(createMachinesRouter(db));
 app.use(createReportRouter(db));
 app.use(createUsersRouter(db));
+app.use(createNotesRouter(db));
 
   app.use((_req, res) => {
     res.status(404).send("Not found");

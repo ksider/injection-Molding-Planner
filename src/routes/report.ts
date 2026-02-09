@@ -7,6 +7,7 @@ import {
   buildOutputsCsv,
   buildReportEditorSeed
 } from "../services/report_service.js";
+import { htmlToMarkdown } from "../services/markdown_service.js";
 import {
   deleteReportConfig,
   getReportConfig,
@@ -165,8 +166,10 @@ export function createReportRouter(db: Db) {
     if (config.signed_at) return res.status(403).send("Report is signed and cannot be edited.");
     const contentJson = typeof req.body.content_json === "string" ? req.body.content_json : "";
     const htmlSnapshot = typeof req.body.html_snapshot === "string" ? req.body.html_snapshot : null;
+    const contentMdRaw = typeof req.body.content_md === "string" ? req.body.content_md : null;
     if (!contentJson) return res.status(400).send("Missing content");
-    upsertReportDocument(db, reportId, contentJson, htmlSnapshot);
+    const contentMd = contentMdRaw ?? (htmlSnapshot ? htmlToMarkdown(htmlSnapshot) : null);
+    upsertReportDocument(db, reportId, contentJson, htmlSnapshot, contentMd, "tiptap", 1);
     res.json({ ok: true });
   });
 

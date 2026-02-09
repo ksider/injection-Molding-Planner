@@ -1,0 +1,232 @@
+<%- include('partials/head', { title: `IM Planner | Journal | ${experiment.name}` }) %>
+<%- include('partials/nav') %>
+<div class="container">
+  <div class="card">
+    <div class="card-header card-header-main">
+      <div>
+        <h1 class="card-title">Lab Journal</h1>
+        <div class="small-note"><a href="/experiments/<%= experiment.id %>"><%- formatInline(experiment.name) %></a></div>
+      </div>
+      <div class="section-actions">
+        <a class="pure-button" href="/experiments/<%= experiment.id %>">Back to experiment</a>
+      </div>
+    </div>
+
+    <% if (canWrite) { %>
+      <div class="journal-compose" id="journalCompose">
+        <div class="journal-toolbar" role="toolbar" aria-label="Markdown helpers">
+          <button class="pure-button" type="button" data-wysiwyg-cmd="undo" title="Undo">↶</button>
+          <button class="pure-button" type="button" data-wysiwyg-cmd="redo" title="Redo">↷</button>
+          <button class="pure-button" type="button" data-wysiwyg-cmd="bold" title="Bold">B</button>
+          <button class="pure-button" type="button" data-wysiwyg-cmd="italic" title="Italic">I</button>
+          <button class="pure-button" type="button" data-wysiwyg-cmd="underline" title="Underline">U</button>
+          <button class="pure-button" type="button" data-wysiwyg-cmd="insertUnorderedList" title="Bullet list">List</button>
+          <button class="pure-button" type="button" data-wysiwyg-link title="Link">Link</button>
+          <button class="pure-button" type="button" data-wysiwyg-code title="Code">Code</button>
+        </div>
+        <div id="journalBody" class="journal-editor" contenteditable="true" data-placeholder="Write note for this experiment..."></div>
+        <div class="journal-compose-footer">
+          <span class="small-note">Ctrl/Cmd+Enter: append today · Ctrl/Cmd+Shift+Enter: new note</span>
+          <button class="pure-button pure-button-primary" id="journalSend" type="button">Add note</button>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="journal-layout">
+      <aside class="journal-rail" id="journalRail"></aside>
+      <section class="journal-feed" id="journalFeed">
+        <div class="notes-drawer-toolbar" style="padding:0 0 0.5rem 0; border-bottom:0;">
+          <input class="notes-search" type="date" id="journalDateFilter" title="Filter by date">
+          <input class="notes-search" type="search" id="journalSearch" placeholder="Search notes">
+        </div>
+        <% if (!notes || notes.length === 0) { %>
+          <div class="small-note notes-empty" id="journalEmpty">No notes yet.</div>
+        <% } %>
+        <% (notes || []).forEach((note) => { %>
+          <article class="journal-item" data-note-id="<%= note.id %>" data-entity-type="<%= note.entity_type || 'experiment' %>" data-created-at="<%= note.activity_at || note.updated_at || note.created_at %>">
+            <header class="journal-item-head">
+              <strong><%- formatInline(note.display_title || note.title) %></strong>
+              <div class="journal-item-head-actions">
+                <span class="small-note"><%= note.timestamp %></span>
+                <% if (note.can_delete) { %>
+                  <button class="icon-button danger tiny" type="button" data-note-delete title="Delete note">
+                    <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+                  </button>
+                <% } %>
+              </div>
+            </div>
+            <div class="journal-item-body"><%- note.body_html %></div>
+          </article>
+        <% }) %>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+  const experimentId = <%= experiment.id %>;
+  const feed = document.getElementById('journalFeed');
+  const rail = document.getElementById('journalRail');
+  const empty = document.getElementById('journalEmpty');
+  const bodyInput = document.getElementById('journalBody');
+  const sendBtn = document.getElementById('journalSend');
+  const searchInput = document.getElementById('journalSearch');
+  const dateInput = document.getElementById('journalDateFilter');
+
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+  }
+
+  function renderNote(note) {
+    const entity = String(note.entity_type || 'experiment');
+    const article = document.createElement('article');
+    article.className = 'journal-item';
+    article.dataset.noteId = String(note.id);
+    article.dataset.entityType = entity;
+    article.dataset.createdAt = String(note.activity_at || note.updated_at || note.created_at || '');
+    article.innerHTML = `
+      <header class="journal-item-head">
+        <strong>${escapeHtml(note.display_title || note.title)}</strong>
+        <div class="journal-item-head-actions">
+          <span class="small-note">${escapeHtml(note.timestamp)}</span>
+          ${note.can_delete ? '<button class="icon-button danger tiny" type="button" data-note-delete title="Delete note"><span class="material-symbols-rounded" aria-hidden="true">delete</span></button>' : ''}
+        </div>
+      </header>
+      <div class="journal-item-entity small-note"><span class="entity-pill entity-${escapeHtml(entity)}">${escapeHtml(entity)}</span> #${escapeHtml(note.entity_id || experimentId)}</div>
+      <div class="journal-item-body">${note.body_html || ''}</div>
+    `;
+    return article;
+  }
+
+  function buildRail() {
+    if (!rail || !feed) return;
+    rail.innerHTML = '';
+    const notes = feed.querySelectorAll('.journal-item:not([style*="display: none"])');
+    notes.forEach((item, index) => {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      const entity = item.dataset.entityType || 'experiment';
+      dot.className = `journal-rail-dot entity-${entity}`;
+      const stamp = item.querySelector('.journal-item-head .small-note')?.textContent || '';
+      dot.title = stamp;
+      dot.setAttribute('aria-label', stamp || `Note ${index + 1}`);
+      dot.addEventListener('click', () => item.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      rail.appendChild(dot);
+    });
+  }
+
+  function applyFilters(query, dateValue) {
+    if (!feed) return;
+    const q = String(query || '').trim().toLowerCase();
+    const date = String(dateValue || '').trim();
+    feed.querySelectorAll('.journal-item').forEach((item) => {
+      const text = item.textContent?.toLowerCase() || '';
+      const createdAt = item.dataset.createdAt || '';
+      const itemDate = createdAt ? new Date(createdAt).toISOString().slice(0, 10) : '';
+      const byText = !q || text.includes(q);
+      const byDate = !date || date === itemDate;
+      item.style.display = byText && byDate ? '' : 'none';
+    });
+    buildRail();
+  }
+
+  function upsertNoteInFeed(note) {
+    if (!feed) return;
+    feed.querySelectorAll('.notes-empty').forEach((el) => el.remove());
+    const existing = feed.querySelector(`.journal-item[data-note-id="${String(note.id)}"]`);
+    const next = renderNote(note);
+    if (existing) {
+      existing.replaceWith(next);
+    } else {
+      feed.appendChild(next);
+    }
+  }
+
+  async function submitNote(forceNew = false) {
+    if (!bodyInput || !sendBtn) return;
+    const bodyHtml = bodyInput.innerHTML.trim();
+    if (!bodyHtml || bodyInput.textContent.trim().length === 0) return;
+    sendBtn.disabled = true;
+    const payload = new URLSearchParams();
+    payload.set('body_html', bodyHtml);
+    payload.set('entity_type', 'experiment');
+    payload.set('entity_id', String(experimentId));
+    if (forceNew) payload.set('force_new', '1');
+    try {
+      const resp = await fetch(`/experiments/${experimentId}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: payload
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data?.note) return;
+      upsertNoteInFeed(data.note);
+      if (empty) empty.remove();
+      bodyInput.innerHTML = '';
+      applyFilters(searchInput?.value || '', dateInput?.value || '');
+      buildRail();
+    } finally {
+      sendBtn.disabled = false;
+    }
+  }
+
+  sendBtn?.addEventListener('click', submitNote);
+  bodyInput?.addEventListener('keydown', (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      event.preventDefault();
+      submitNote(Boolean(event.shiftKey));
+    }
+  });
+
+  function exec(cmd, val) {
+    bodyInput?.focus();
+    document.execCommand(cmd, false, val);
+  }
+
+  function applyCode() {
+    if (!bodyInput) return;
+    const selection = window.getSelection();
+    const text = selection && selection.rangeCount ? selection.toString() : '';
+    exec('insertHTML', `<code>${escapeHtml(text || 'code')}</code>`);
+    bodyInput.focus();
+  }
+
+  function applyLink() {
+    if (!bodyInput) return;
+    const url = window.prompt('Enter URL', 'https://');
+    if (!url) return;
+    exec('createLink', url);
+  }
+
+  document.querySelectorAll('[data-wysiwyg-cmd]').forEach((btn) => {
+    btn.addEventListener('click', () => exec(btn.getAttribute('data-wysiwyg-cmd') || 'bold'));
+  });
+  document.querySelectorAll('[data-wysiwyg-link]').forEach((btn) => {
+    btn.addEventListener('click', applyLink);
+  });
+  document.querySelectorAll('[data-wysiwyg-code]').forEach((btn) => {
+    btn.addEventListener('click', applyCode);
+  });
+  feed?.addEventListener('click', async (event) => {
+    const target = event.target;
+    const button = target && target.closest ? target.closest('[data-note-delete]') : null;
+    if (!button) return;
+    const card = button.closest('.journal-item');
+    const noteId = card?.dataset?.noteId;
+    if (!noteId) return;
+    if (!window.confirm('Delete this note?')) return;
+    const resp = await fetch(`/experiments/${experimentId}/notes/${noteId}/delete`, { method: 'POST' });
+    if (!resp.ok) return;
+    card.remove();
+    if (!feed.querySelector('.journal-item')) {
+      feed.innerHTML = '<div class="small-note notes-empty" id="journalEmpty">No notes yet.</div>';
+    }
+    applyFilters(searchInput?.value || '', dateInput?.value || '');
+  });
+
+  searchInput?.addEventListener('input', () => applyFilters(searchInput.value, dateInput?.value || ''));
+  dateInput?.addEventListener('change', () => applyFilters(searchInput?.value || '', dateInput.value));
+
+  buildRail();
+</script>
+<%- include('partials/foot') %>

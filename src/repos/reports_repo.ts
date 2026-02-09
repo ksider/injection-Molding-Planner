@@ -78,6 +78,9 @@ type ReportDocumentRow = {
   report_id: number;
   content_json: string;
   html_snapshot: string | null;
+  content_md: string | null;
+  editor_kind: string;
+  schema_version: number;
   updated_at: string;
 };
 
@@ -92,18 +95,24 @@ export function upsertReportDocument(
   db: Db,
   reportId: number,
   contentJson: string,
-  htmlSnapshot: string | null
+  htmlSnapshot: string | null,
+  contentMd: string | null,
+  editorKind = "tiptap",
+  schemaVersion = 1
 ) {
   db.prepare(
     `
-    INSERT INTO report_documents (report_id, content_json, html_snapshot, updated_at)
-    VALUES (?, ?, ?, datetime('now'))
+    INSERT INTO report_documents (report_id, content_json, html_snapshot, content_md, editor_kind, schema_version, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
     ON CONFLICT(report_id) DO UPDATE SET
       content_json = excluded.content_json,
       html_snapshot = excluded.html_snapshot,
+      content_md = excluded.content_md,
+      editor_kind = excluded.editor_kind,
+      schema_version = excluded.schema_version,
       updated_at = excluded.updated_at
     `
-  ).run(reportId, contentJson, htmlSnapshot);
+  ).run(reportId, contentJson, htmlSnapshot, contentMd, editorKind, schemaVersion);
 }
 
 export type { ReportConfigRow };

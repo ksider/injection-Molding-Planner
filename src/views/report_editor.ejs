@@ -134,6 +134,7 @@
   import Highlight from 'https://esm.sh/@tiptap/extension-highlight@3.19.0';
   import { TextStyle, FontSize, LineHeight } from 'https://esm.sh/@tiptap/extension-text-style@3.19.0';
   import { FontFamily } from 'https://esm.sh/@tiptap/extension-font-family@3.19.0';
+  import TurndownService from 'https://esm.sh/turndown@7.2.0';
 
   // Seed data is produced on the server from the report content. This keeps the
   // editor structure stable and predictable.
@@ -143,6 +144,11 @@
   const rheoData = <%- JSON.stringify(report.qualification?.charts.rheology || []) %>;
   const windowData = <%- JSON.stringify(report.qualification?.charts.processWindow || {}) %>;
   const isSigned = <%= reportConfig?.signed_at ? 'true' : 'false' %>;
+  const turndown = new TurndownService({
+    headingStyle: 'atx',
+    codeBlockStyle: 'fenced',
+    bulletListMarker: '-'
+  });
 
   const ReportImage = Image.extend({
     addAttributes() {
@@ -716,6 +722,7 @@
     const payload = new URLSearchParams();
     payload.set('content_json', fingerprint);
     payload.set('html_snapshot', html);
+    payload.set('content_md', turndown.turndown(html));
     saveInFlight = fetch('/reports/<%= reportConfig.id %>/editor', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

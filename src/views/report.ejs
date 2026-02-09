@@ -63,6 +63,14 @@
     <% } %>
   </div>
 
+  <%- include('partials/entity_notes', {
+    experimentId: report.experiment.id,
+    entityType: (typeof reportConfig !== 'undefined' && reportConfig) ? 'report' : 'experiment',
+    entityId: (typeof reportConfig !== 'undefined' && reportConfig) ? reportConfig.id : report.experiment.id,
+    title: 'Report Notes',
+    canWrite: currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'engineer')
+  }) %>
+
   <div class="card">
     <div class="card-header">
       <h2 class="card-title">Recipes</h2>

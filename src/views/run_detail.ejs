@@ -42,6 +42,14 @@
     </div>
   <% } %>
 
+  <%- include('partials/entity_notes', {
+    experimentId: experiment.id,
+    entityType: 'run',
+    entityId: run.id,
+    title: 'Run Notes',
+    canWrite: currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'engineer')
+  }) %>
+
   <form class="pure-form run-form" action="/runs/<%= run.id %>" method="post">
     <div class="card">
       <h2 class="card-title">Inputs</h2>

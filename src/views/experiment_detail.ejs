@@ -12,6 +12,9 @@
         </div>
       </div>
       <div class="section-actions">
+        <a class="icon-button" href="/experiments/<%= experiment.id %>/journal" title="Open journal">
+          <span class="material-symbols-rounded" aria-hidden="true">menu_book</span>
+        </a>
         <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'engineer')) { %>
           <button class="icon-button" type="button" id="openMachineEdit" title="Edit experiment">
             <span class="material-symbols-rounded" aria-hidden="true">edit</span>
@@ -223,6 +226,65 @@
   </div>
 
 </div>
+
+<% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'engineer')) { %>
+  <button
+    class="icon-button notes-drawer-toggle"
+    type="button"
+    id="notesDrawerToggle"
+    aria-expanded="false"
+    title="Notes"
+  >
+    <span class="material-symbols-rounded" aria-hidden="true">expand_less</span>
+  </button>
+
+  <aside class="notes-drawer" id="notesDrawer" aria-label="Experiment notes">
+    <div class="notes-drawer-head">
+      <strong>Notes</strong>
+      <div class="section-actions">
+        <a class="pure-button" href="/experiments/<%= experiment.id %>/journal">Open in journal</a>
+        <button class="icon-button" type="button" id="notesDrawerClose" title="Hide notes">
+          <span class="material-symbols-rounded" aria-hidden="true">expand_more</span>
+        </button>
+      </div>
+    </div>
+    <div class="notes-drawer-toolbar">
+      <label class="toggle" title="Only current context">
+        <input type="checkbox" id="notesOnlyCurrentToggle">
+        <span class="track"></span>
+        <span>Only current context</span>
+      </label>
+      <span class="small-note">Context: Experiment #<%= experiment.id %></span>
+      <input class="notes-search" type="date" id="notesDateInput" title="Filter by date">
+      <input class="notes-search" type="search" id="notesSearchInput" placeholder="Search notes">
+    </div>
+    <div class="notes-drawer-body">
+      <aside class="journal-rail" id="notesRail"></aside>
+      <section class="notes-feed-scroll">
+        <div class="journal-feed" id="notesFeed">
+          <div class="small-note notes-empty" id="notesEmptyState">No notes yet.</div>
+        </div>
+        <div class="notes-compose">
+          <div class="journal-toolbar" role="toolbar" aria-label="Markdown helpers">
+            <button class="pure-button" type="button" data-notes-wysiwyg-cmd="undo" title="Undo">↶</button>
+            <button class="pure-button" type="button" data-notes-wysiwyg-cmd="redo" title="Redo">↷</button>
+            <button class="pure-button" type="button" data-notes-wysiwyg-cmd="bold" title="Bold">B</button>
+            <button class="pure-button" type="button" data-notes-wysiwyg-cmd="italic" title="Italic">I</button>
+            <button class="pure-button" type="button" data-notes-wysiwyg-cmd="underline" title="Underline">U</button>
+            <button class="pure-button" type="button" data-notes-wysiwyg-cmd="insertUnorderedList" title="Bullet list">List</button>
+            <button class="pure-button" type="button" data-notes-wysiwyg-link title="Link">Link</button>
+            <button class="pure-button" type="button" data-notes-wysiwyg-code title="Code">Code</button>
+          </div>
+          <div id="notesInput" class="journal-editor" contenteditable="true" data-placeholder="Write note for current experiment context..."></div>
+          <div class="notes-compose-footer">
+            <span class="small-note">Ctrl/Cmd+Enter: append today · Ctrl/Cmd+Shift+Enter: new note</span>
+            <button class="pure-button pure-button-primary" type="button" id="notesSendBtn">Add note</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </aside>
+<% } %>
 
 <dialog class="modal-frame" id="reportDialog">
   <div class="modal-header">
@@ -842,6 +904,205 @@
   const toggleTaskCreateEntities = document.getElementById('toggleTaskCreateEntities');
   const taskCreateEntitiesPanel = document.getElementById('taskCreateEntitiesPanel');
   let currentTaskId = null;
+  const notesDrawer = document.getElementById('notesDrawer');
+  const notesDrawerToggle = document.getElementById('notesDrawerToggle');
+  const notesDrawerClose = document.getElementById('notesDrawerClose');
+  const notesOnlyCurrentToggle = document.getElementById('notesOnlyCurrentToggle');
+  const notesFeed = document.getElementById('notesFeed');
+  const notesFeedScroll = document.querySelector('.notes-drawer .notes-feed-scroll');
+  const notesRail = document.getElementById('notesRail');
+  const notesEmptyState = document.getElementById('notesEmptyState');
+  const notesInput = document.getElementById('notesInput');
+  const notesSendBtn = document.getElementById('notesSendBtn');
+  const notesDateInput = document.getElementById('notesDateInput');
+  const notesSearchInput = document.getElementById('notesSearchInput');
+
+  function notesEscapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+  }
+
+  function renderNoteCard(note) {
+    const entity = String(note.entity_type || 'experiment');
+    const article = document.createElement('article');
+    article.className = 'journal-item';
+    article.dataset.noteId = String(note.id);
+    article.dataset.entityType = entity;
+    article.dataset.createdAt = String(note.activity_at || note.updated_at || note.created_at || '');
+    article.innerHTML = `
+      <header class="journal-item-head">
+        <strong>${notesEscapeHtml(note.display_title || note.title || '')}</strong>
+        <div class="journal-item-head-actions">
+          <span class="small-note">${notesEscapeHtml(note.timestamp || '')}</span>
+          ${note.can_delete ? '<button class="icon-button danger tiny" type="button" data-note-delete title="Delete note"><span class="material-symbols-rounded" aria-hidden="true">delete</span></button>' : ''}
+        </div>
+      </header>
+      <div class="journal-item-entity small-note"><span class="entity-pill entity-${notesEscapeHtml(entity)}">${notesEscapeHtml(entity)}</span> #${notesEscapeHtml(note.entity_id || '<%= experiment.id %>')}</div>
+      <div class="journal-item-body">${note.body_html || ''}</div>
+    `;
+    return article;
+  }
+
+  function rebuildNotesRail() {
+    if (!notesRail || !notesFeed) return;
+    notesRail.innerHTML = '';
+    const items = notesFeed.querySelectorAll('.journal-item:not([style*="display: none"])');
+    items.forEach((item, index) => {
+      const entity = item.dataset.entityType || 'experiment';
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.className = `journal-rail-dot entity-${entity}`;
+      const stamp = item.querySelector('.journal-item-head .small-note')?.textContent || `Note ${index + 1}`;
+      dot.title = stamp;
+      dot.setAttribute('aria-label', stamp);
+      dot.addEventListener('click', () => item.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      notesRail.appendChild(dot);
+    });
+  }
+
+  async function loadNotes() {
+    if (!notesFeed) return;
+    const onlyCurrent = notesOnlyCurrentToggle?.checked ? '1' : '0';
+    const url = `/experiments/<%= experiment.id %>/notes.json?only_current=${onlyCurrent}&entity_type=experiment&entity_id=<%= experiment.id %>`;
+    const resp = await fetch(url);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    notesFeed.innerHTML = '';
+    const notes = Array.isArray(data.notes) ? data.notes : [];
+    if (!notes.length) {
+      const empty = document.createElement('div');
+      empty.className = 'small-note notes-empty';
+      empty.id = 'notesEmptyState';
+      empty.textContent = 'No notes yet.';
+      notesFeed.appendChild(empty);
+      rebuildNotesRail();
+      return;
+    }
+    notes
+      .slice()
+      .sort((a, b) => new Date(a.activity_at || a.updated_at || a.created_at || 0).getTime() - new Date(b.activity_at || b.updated_at || b.created_at || 0).getTime())
+      .forEach((note) => notesFeed.appendChild(renderNoteCard(note)));
+    applyNotesFilters(notesSearchInput?.value || '', notesDateInput?.value || '');
+    rebuildNotesRail();
+    if (notesFeedScroll) {
+      notesFeedScroll.scrollTop = notesFeedScroll.scrollHeight;
+    }
+  }
+
+  function applyNotesFilters(query, dateValue) {
+    if (!notesFeed) return;
+    const q = String(query || '').trim().toLowerCase();
+    const date = String(dateValue || '').trim();
+    notesFeed.querySelectorAll('.journal-item').forEach((item) => {
+      const text = item.textContent?.toLowerCase() || '';
+      const createdAt = item.dataset.createdAt || '';
+      const itemDate = createdAt ? new Date(createdAt).toISOString().slice(0, 10) : '';
+      const byText = !q || text.includes(q);
+      const byDate = !date || date === itemDate;
+      item.style.display = byText && byDate ? '' : 'none';
+    });
+    rebuildNotesRail();
+  }
+
+  async function submitNoteFromDrawer(forceNew = false) {
+    if (!notesInput || !notesSendBtn) return;
+    const bodyHtml = notesInput.innerHTML.trim();
+    if (!bodyHtml || !notesInput.textContent || notesInput.textContent.trim().length === 0) return;
+    notesSendBtn.disabled = true;
+    const payload = new URLSearchParams();
+    payload.set('body_html', bodyHtml);
+    payload.set('entity_type', 'experiment');
+    payload.set('entity_id', '<%= experiment.id %>');
+    if (forceNew) payload.set('force_new', '1');
+    try {
+      const resp = await fetch(`/experiments/<%= experiment.id %>/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: payload
+      });
+      const data = await resp.json();
+      if (!resp.ok || !data?.note) return;
+      notesInput.innerHTML = '';
+      await loadNotes();
+    } finally {
+      notesSendBtn.disabled = false;
+    }
+  }
+
+  notesDrawerToggle?.addEventListener('click', async () => {
+    const willOpen = !notesDrawer?.classList.contains('is-open');
+    notesDrawer?.classList.toggle('is-open', willOpen);
+    notesDrawerToggle.setAttribute('aria-expanded', String(willOpen));
+    if (willOpen) {
+      await loadNotes();
+      if (notesFeedScroll) {
+        notesFeedScroll.scrollTop = notesFeedScroll.scrollHeight;
+      }
+      notesDrawerToggle.style.display = 'none';
+    }
+  });
+
+  notesDrawerClose?.addEventListener('click', () => {
+    notesDrawer?.classList.remove('is-open');
+    notesDrawerToggle?.setAttribute('aria-expanded', 'false');
+    if (notesDrawerToggle) notesDrawerToggle.style.display = '';
+  });
+
+  notesOnlyCurrentToggle?.addEventListener('change', loadNotes);
+  notesSearchInput?.addEventListener('input', () => applyNotesFilters(notesSearchInput.value, notesDateInput?.value || ''));
+  notesDateInput?.addEventListener('change', () => applyNotesFilters(notesSearchInput?.value || '', notesDateInput.value));
+  notesFeed?.addEventListener('click', async (event) => {
+    const target = event.target;
+    const button = target && target.closest ? target.closest('[data-note-delete]') : null;
+    if (!button) return;
+    const card = button.closest('.journal-item');
+    const noteId = card?.dataset?.noteId;
+    if (!noteId) return;
+    if (!window.confirm('Delete this note?')) return;
+    const resp = await fetch(`/experiments/<%= experiment.id %>/notes/${noteId}/delete`, { method: 'POST' });
+    if (!resp.ok) return;
+    card.remove();
+    if (!notesFeed.querySelector('.journal-item')) {
+      notesFeed.innerHTML = '<div class="small-note">No notes yet.</div>';
+    }
+    rebuildNotesRail();
+  });
+  notesSendBtn?.addEventListener('click', submitNoteFromDrawer);
+  notesInput?.addEventListener('keydown', (event) => {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      event.preventDefault();
+      submitNoteFromDrawer(Boolean(event.shiftKey));
+    }
+  });
+
+  function notesExec(cmd, val) {
+    notesInput?.focus();
+    document.execCommand(cmd, false, val);
+  }
+
+  function notesApplyCode() {
+    if (!notesInput) return;
+    const selection = window.getSelection();
+    const text = selection && selection.rangeCount ? selection.toString() : '';
+    notesExec('insertHTML', `<code>${notesEscapeHtml(text || 'code')}</code>`);
+    notesInput.focus();
+  }
+
+  function notesApplyLink() {
+    if (!notesInput) return;
+    const url = window.prompt('Enter URL', 'https://');
+    if (!url) return;
+    notesExec('createLink', url);
+  }
+
+  document.querySelectorAll('[data-notes-wysiwyg-cmd]').forEach((btn) => {
+    btn.addEventListener('click', () => notesExec(btn.getAttribute('data-notes-wysiwyg-cmd') || 'bold'));
+  });
+  document.querySelectorAll('[data-notes-wysiwyg-link]').forEach((btn) => {
+    btn.addEventListener('click', notesApplyLink);
+  });
+  document.querySelectorAll('[data-notes-wysiwyg-code]').forEach((btn) => {
+    btn.addEventListener('click', notesApplyCode);
+  });
 
   const setCheckboxState = (selector, existingMap, type) => {
     document.querySelectorAll(selector).forEach((input) => {

@@ -27,6 +27,14 @@
     </div>
   </div>
 
+  <%- include('partials/entity_notes', {
+    experimentId: experiment.id,
+    entityType: 'doe',
+    entityId: doeId,
+    title: 'DOE Notes',
+    canWrite: currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'engineer')
+  }) %>
+
   <% if (tab === 'design') { %>
     <div class="card">
       <h2 class="card-title">Factor Setup</h2>

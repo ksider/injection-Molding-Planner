@@ -118,6 +118,10 @@ export function buildBreadcrumbs(db: Db, req: Request): Breadcrumb[] {
       }
       return crumbs;
     }
+    if (second === "journal") {
+      push("Lab Journal", `/experiments/${experimentId}/journal`);
+      return crumbs;
+    }
     if (second === "doe") {
       const doeId = Number(segments[3]);
       if (Number.isFinite(doeId)) {

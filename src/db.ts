@@ -94,6 +94,45 @@ function initDb(db: Db) {
       FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
+    CREATE TABLE IF NOT EXISTS notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      experiment_id INTEGER NOT NULL,
+      author_id INTEGER,
+      title TEXT NOT NULL,
+      body_md TEXT NOT NULL,
+      pinned INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      archived_at TEXT,
+      FOREIGN KEY (experiment_id) REFERENCES experiments(id) ON DELETE CASCADE,
+      FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+    CREATE TABLE IF NOT EXISTS note_links (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      note_id INTEGER NOT NULL UNIQUE,
+      entity_type TEXT NOT NULL, -- experiment | qualification_step | doe | run | report | task
+      entity_id INTEGER NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS note_comments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      note_id INTEGER NOT NULL,
+      author_id INTEGER,
+      body_md TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      archived_at TEXT,
+      FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE,
+      FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+    CREATE TABLE IF NOT EXISTS note_tags (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      note_id INTEGER NOT NULL,
+      tag TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
+    );
     CREATE TABLE IF NOT EXISTS recipes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -263,6 +302,9 @@ function initDb(db: Db) {
       report_id INTEGER PRIMARY KEY,
       content_json TEXT NOT NULL,
       html_snapshot TEXT,
+      content_md TEXT,
+      editor_kind TEXT NOT NULL DEFAULT 'editorjs',
+      schema_version INTEGER NOT NULL DEFAULT 1,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (report_id) REFERENCES report_configs(id) ON DELETE CASCADE
     );
@@ -407,6 +449,15 @@ function initDb(db: Db) {
   }
   if (!hasColumn(db, "report_configs", "signed_by_user_id")) {
     db.exec("ALTER TABLE report_configs ADD COLUMN signed_by_user_id INTEGER");
+  }
+  if (!hasColumn(db, "report_documents", "content_md")) {
+    db.exec("ALTER TABLE report_documents ADD COLUMN content_md TEXT");
+  }
+  if (!hasColumn(db, "report_documents", "editor_kind")) {
+    db.exec("ALTER TABLE report_documents ADD COLUMN editor_kind TEXT NOT NULL DEFAULT 'editorjs'");
+  }
+  if (!hasColumn(db, "report_documents", "schema_version")) {
+    db.exec("ALTER TABLE report_documents ADD COLUMN schema_version INTEGER NOT NULL DEFAULT 1");
   }
   const designMetaInfo = db
     .prepare("PRAGMA table_info(design_metadata)")
