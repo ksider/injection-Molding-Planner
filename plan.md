@@ -294,3 +294,149 @@
 - финальная мобильная компоновка тулбара.
 4. После стабилизации перейти к каноническому хранению `content_md`:
 - хранить `content_json + html_snapshot + content_md` на переходном этапе.
+
+## Дополнение к roadmap: качество, управляемость и интеграции
+
+**Цель**
+- Повысить предсказуемость процесса, сократить время реакции на проблемы и подготовить систему к масштабированию (команда, площадки, внешние системы).
+
+**Приоритетные инициативы**
+1. **SPC-контур для run-данных**
+- Контрольные карты (`Xbar-R`, `I-MR`) и алерты при выходе за контрольные пределы.
+2. **Golden Run / Baseline-профили**
+- Эталонные профили по `machine + recipe` и расчет отклонения текущих запусков от baseline.
+3. **CAPA-процесс**
+- Связка “дефект/аномалия -> задача -> corrective action -> проверка эффективности”.
+4. **Tamper-evident аудит подписей**
+- Хеш-снимок подписанного отчета и проверяемая цепочка изменений.
+5. **Backup + Restore drill**
+- Регулярный тест восстановления из бэкапа с фиксацией `RPO/RTO`.
+6. **Уведомления и упоминания**
+- `@mentions`, дедлайны задач, новые подписи/комментарии (in-app + email).
+7. **Глобальный поиск**
+- Полнотекстовый поиск по отчетам, заметкам, DOE, задачам с фильтрами.
+8. **Версионирование рецептов и параметров машин**
+- История версий с блокировкой “задним числом” для уже использованных конфигураций.
+9. **Webhooks / Events API**
+- События `task.updated`, `report.signed`, `run.completed` для интеграций (MES/ERP/LIMS).
+10. **Quality Gates перед `Done`**
+- Обязательные проверки: подписи, обязательные поля, минимальные run-критерии.
+
+**Этапы внедрения**
+1. **Quick wins (2-4 недели)**
+- Quality Gates перед закрытием задач/экспериментов.
+- Уведомления по дедлайнам и упоминаниям.
+- Глобальный поиск (MVP: заголовки и метаданные).
+- Backup + Restore drill (первый регламент и автоматическая проверка).
+2. **Middle phase (1-2 релиза)**
+- SPC-карты + базовые алерты по критичным метрикам.
+- Golden Run и сравнение run против baseline.
+- Полноценный CAPA-флоу с закрытием по критериям эффективности.
+- Версионирование рецептов/параметров с привязкой к экспериментам.
+3. **Long-term (после стабилизации core)**
+- Tamper-evident журнал подписей и аудита.
+- Webhooks / Events API для внешних систем.
+- Расширенный поиск (full-text по телу Markdown и вложениям).
+
+**Минимальные технические изменения**
+1. БД:
+- `notifications`, `mentions`, `quality_gates`, `baseline_profiles`, `capa_cases`, `audit_chain`, `recipe_versions`.
+2. Сервисы:
+- `src/services/spc_service.ts`,
+- `src/services/notification_service.ts`,
+- `src/services/capa_service.ts`,
+- `src/services/audit_chain_service.ts`.
+3. API:
+- `/experiments/:id/quality-gates`,
+- `/experiments/:id/spc`,
+- `/tasks/:id/capa`,
+- `/events/webhooks` (подпись webhook + retry policy).
+4. Наблюдаемость:
+- Метрики `alert_count`, `capa_lead_time`, `backup_restore_time`, `overdue_tasks`.
+
+## План: внутренняя почта (Internal Mail) + интеграция с задачами и экспериментами
+
+**Цель**
+- Добавить асинхронную внутреннюю коммуникацию (по модели email/inbox) без realtime-чата.
+- Связать сообщения с рабочими сущностями (`task`, `experiment`, `report`) и системными уведомлениями.
+
+**Границы решения (осознанно без realtime)**
+1. Нет WebSocket/чат-сокетов (`Socket.IO`, `ws` не требуются).
+2. Обновление интерфейса через обычные HTTP-запросы и периодический refresh.
+3. Приоритет: надежность, аудит, читаемая история обсуждений.
+
+**Модель данных (MVP)**
+1. `mail_threads`:
+- `id`, `subject`, `created_by`, `context_type` (`experiment|task|report|system`), `context_id`, `created_at`, `updated_at`, `closed_at`.
+2. `mail_messages`:
+- `id`, `thread_id`, `author_id`, `body_md`, `created_at`, `edited_at`, `is_system`.
+3. `mail_participants`:
+- `thread_id`, `user_id`, `role` (`owner|participant|observer`), `muted`, `last_read_message_id`.
+4. `mail_receipts`:
+- `message_id`, `user_id`, `delivered_at`, `read_at`, `archived_at`, `deleted_at`.
+5. `mail_attachments` (опционально 2-й этап):
+- `id`, `message_id`, `file_path`, `file_name`, `mime`, `size`, `created_at`.
+
+**Интеграция с основными сервисами**
+1. Таски:
+- При создании задачи — опционально автосоздание thread с `context_type=task`.
+- События `task.assigned`, `task.overdue`, `task.status_changed` публикуются как системные сообщения в thread.
+- Кнопка “Open task thread” в карточке задачи.
+2. Эксперименты:
+- Экспериментный thread (`context_type=experiment`) для общих обсуждений.
+- События `experiment.status_changed`, `experiment.owner_changed`, `experiment.archived` пишутся как системные сообщения.
+3. Отчеты/подписи:
+- События `report.created`, `report.signed`, `report.rejected` создают запись в связанном thread.
+4. Notifications:
+- `notification_service` создает in-app уведомление со ссылкой на thread/message.
+- Email (опционально): отправлять только дайджест/важные события, не каждое сообщение.
+
+**API (минимум)**
+1. `GET /mail/inbox` — список тредов пользователя (unread, updated_at, context).
+2. `GET /mail/threads/:id` — просмотр треда + сообщения.
+3. `POST /mail/threads` — создание треда (subject, participants, context).
+4. `POST /mail/threads/:id/messages` — отправка сообщения.
+5. `POST /mail/threads/:id/read` — отметить прочитанным до message_id.
+6. `POST /mail/threads/:id/archive` — архивировать тред для пользователя.
+7. `GET /tasks/:id/thread` и `GET /experiments/:id/thread` — быстрый переход к связанному треду.
+
+**UI (MVP)**
+1. Страница `Inbox`:
+- вкладки `Unread`, `All`, `Archived`,
+- сортировка по `updated_at`,
+- фильтры по `context_type` и эксперименту.
+2. Страница треда:
+- лента сообщений (Markdown-render),
+- индикатор системных сообщений,
+- список участников,
+- поле ответа + кнопка “Reply”.
+3. Врезки в существующий UI:
+- в `Task` и `Experiment` добавить кнопку/бейдж “Mail thread”.
+- счетчик непрочитанных рядом с основным меню.
+
+**Права доступа**
+1. Создавать тред по задаче/эксперименту: `admin|manager|engineer`.
+2. Писать в тред: участники треда + роли с доступом к сущности.
+3. Чтение: только участники и пользователи с правом чтения контекстной сущности.
+4. Удаление сообщений: soft-delete автором (ограниченное окно) и admin.
+
+**Этапы внедрения**
+1. Этап 1 (MVP):
+- `mail_threads`, `mail_messages`, `mail_participants`, `mail_receipts`,
+- `Inbox` + просмотр треда + отправка сообщений,
+- интеграция с `task.assigned` и `experiment.status_changed`.
+2. Этап 2:
+- архив/поиск/фильтры,
+- системные шаблоны сообщений по событиям report/task/experiment,
+- in-app уведомления со ссылками на thread/message.
+3. Этап 3:
+- email-дайджесты (по расписанию или при high-priority событиях),
+- вложения и экспорт переписки в report appendix (опционально).
+
+**Риски и контроль**
+1. Риск: дублирование с заметками (`Lab Journal`).
+- Контроль: Journal = знания/хронология эксперимента, Mail = коммуникация и поручения.
+2. Риск: шум от системных сообщений.
+- Контроль: категории событий + mute на thread + daily digest.
+3. Риск: потеря контекста при изменении/архивации сущности.
+- Контроль: хранить `context_type/context_id` и snapshot заголовка сущности в момент публикации.

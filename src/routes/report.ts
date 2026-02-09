@@ -34,6 +34,13 @@ const parseIdList = (raw: unknown) => {
     .filter((val) => Number.isFinite(val));
 };
 
+const sanitizeHtmlForPrint = (html: string) =>
+  String(html || "")
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replace(/\son\w+="[^"]*"/gi, "")
+    .replace(/\son\w+='[^']*'/gi, "")
+    .replace(/\s(href|src)\s*=\s*(['"])\s*javascript:[^'"]*\2/gi, "");
+
 export function createReportRouter(db: Db) {
   const router = express.Router();
   const hasRole = (req: express.Request, roles: string[]) => roles.includes(req.user?.role ?? "");
@@ -161,6 +168,19 @@ export function createReportRouter(db: Db) {
     if (!contentJson) return res.status(400).send("Missing content");
     upsertReportDocument(db, reportId, contentJson, htmlSnapshot);
     res.json({ ok: true });
+  });
+
+  router.get("/reports/:reportId/editor/print", (req, res) => {
+    const reportId = Number(req.params.reportId);
+    const config = getReportConfig(db, reportId);
+    if (!config) return res.status(404).send("Report not found");
+    const existingDoc = getReportDocument(db, reportId);
+    const htmlContent = sanitizeHtmlForPrint(existingDoc?.html_snapshot || "<p>Report content is empty.</p>");
+    res.render("report_editor_print", {
+      reportConfig: config,
+      htmlContent,
+      exportedAt: new Date().toLocaleString()
+    });
   });
 
   router.post("/reports/:reportId/delete", (req, res) => {

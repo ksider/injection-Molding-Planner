@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= reportConfig?.name || 'Report' %> - PDF Export</title>
+  <style>
+    :root {
+      --ink: #111;
+      --muted: #666;
+      --line: #d7d7d7;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #fff;
+    }
+
+    .page {
+      width: 210mm;
+      margin: 0 auto;
+      padding: 14mm 12mm;
+      background: #fff;
+    }
+
+    .doc-title {
+      margin: 0 0 4mm;
+      font-size: 24px;
+      line-height: 1.25;
+    }
+
+    .doc-meta {
+      margin: 0 0 8mm;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .doc-content {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .doc-content h1,
+    .doc-content h2,
+    .doc-content h3,
+    .doc-content h4 {
+      line-height: 1.25;
+      break-after: avoid-page;
+      page-break-after: avoid;
+    }
+
+    .doc-content p,
+    .doc-content li {
+      orphans: 3;
+      widows: 3;
+    }
+
+    .doc-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .doc-content th,
+    .doc-content td {
+      border: 1px solid var(--line);
+      padding: 6px 8px;
+      vertical-align: top;
+    }
+
+    .doc-content pre,
+    .doc-content blockquote,
+    .doc-content img,
+    .doc-content figure {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .doc-content img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      max-height: 240mm;
+      margin: 8px auto;
+    }
+
+    .doc-content blockquote {
+      border-left: 3px solid var(--line);
+      margin: 8px 0;
+      padding-left: 10px;
+      color: #444;
+    }
+
+    .screen-note {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: #333;
+      background: #f5f1eb;
+      border-bottom: 1px solid #e1d8cc;
+      text-align: center;
+    }
+
+    @media print {
+      .screen-note {
+        display: none;
+      }
+      body {
+        background: #fff;
+      }
+      .page {
+        width: auto;
+        margin: 0;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="screen-note">Use "Save as PDF" in print dialog for selectable text.</div>
+  <main class="page">
+    <h1 class="doc-title"><%- reportConfig?.name || 'Report' %></h1>
+    <div class="doc-meta">Exported: <%= exportedAt %></div>
+    <article class="doc-content"><%- htmlContent %></article>
+  </main>
+
+  <script>
+    window.addEventListener('load', () => {
+      setTimeout(() => window.print(), 120);
+    });
+  </script>
+</body>
+</html>

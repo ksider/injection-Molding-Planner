@@ -346,7 +346,9 @@
     editable: !isSigned,
     extensions: [
       StarterKit.configure({
-        heading: { levels: [1, 2, 3, 4] }
+        heading: { levels: [1, 2, 3, 4] },
+        link: false,
+        underline: false
       }),
       Underline,
       TextStyle,
@@ -776,6 +778,28 @@
     });
   }
 
-  document.getElementById('printReport')?.addEventListener('click', () => window.print());
+  const exportPdfBtn = document.getElementById('printReport');
+  exportPdfBtn?.addEventListener('click', async () => {
+    if (!isSigned) {
+      await persistEditor(false);
+    }
+    if (exportPdfBtn instanceof HTMLButtonElement) {
+      exportPdfBtn.disabled = true;
+      exportPdfBtn.textContent = 'Exporting...';
+    }
+    saveStatus.textContent = 'Opening print view...';
+    try {
+      const url = `/reports/<%= reportConfig.id %>/editor/print?ts=${Date.now()}`;
+      const win = window.open(url, '_blank', 'noopener,noreferrer');
+      saveStatus.textContent = win ? 'Print view opened' : 'Allow pop-ups to export PDF';
+    } catch {
+      saveStatus.textContent = 'PDF export failed';
+    } finally {      
+      if (exportPdfBtn instanceof HTMLButtonElement) {
+        exportPdfBtn.disabled = false;
+        exportPdfBtn.textContent = 'Export PDF';
+      }
+    }
+  });
 </script>
 <%- include('partials/foot') %>

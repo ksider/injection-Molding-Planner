@@ -46,7 +46,7 @@ sub {
   padding: 1rem 1.5rem;
   background: linear-gradient(90deg, #f8ede0, #f4efe9);
   border-bottom: 1px solid var(--border);
-  position: sticky;
+ /* position: sticky; */
   top: 0;
   z-index: 10;
 }
@@ -2058,7 +2058,8 @@ textarea {
   gap: 0.45rem;
   margin-top: 1rem;
   position: sticky;
-  top: 4.2rem;
+  /* top: 4.2rem; */
+  top:0;
   z-index: 20;
   padding: 0.55rem;
   border: 1px solid var(--border);
