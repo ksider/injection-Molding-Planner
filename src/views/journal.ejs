@@ -73,6 +73,47 @@
   const searchInput = document.getElementById('journalSearch');
   const dateInput = document.getElementById('journalDateFilter');
   let railTooltipEl = null;
+  let mathRenderer = null;
+  let mathRendererLoader = null;
+
+  function ensureKatexCss() {
+    if (document.getElementById('katex-css')) return;
+    const link = document.createElement('link');
+    link.id = 'katex-css';
+    link.rel = 'stylesheet';
+    link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css';
+    document.head.appendChild(link);
+  }
+
+  async function ensureMathRenderer() {
+    if (mathRenderer) return mathRenderer;
+    if (mathRendererLoader) return mathRendererLoader;
+    ensureKatexCss();
+    mathRendererLoader = import('https://esm.sh/katex@0.16.11/contrib/auto-render.mjs')
+      .then((mod) => {
+        mathRenderer = mod.default || mod.renderMathInElement || null;
+        return mathRenderer;
+      })
+      .catch(() => null);
+    return mathRendererLoader;
+  }
+
+  function renderMathInElement(el) {
+    if (!el || el.dataset.mathRendered === '1') return;
+    ensureMathRenderer().then((renderFn) => {
+      if (!renderFn) return;
+      renderFn(el, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '\\\\[', right: '\\\\]', display: true },
+          { left: '$', right: '$', display: false },
+          { left: '\\\\(', right: '\\\\)', display: false }
+        ],
+        throwOnError: false
+      });
+      el.dataset.mathRendered = '1';
+    });
+  }
 
   function ensureRailTooltip() {
     if (railTooltipEl && document.body.contains(railTooltipEl)) return railTooltipEl;
@@ -129,6 +170,7 @@
       <div class="journal-item-entity small-note"><span class="entity-pill entity-${escapeHtml(entity)}">${escapeHtml(entity)}</span> #${escapeHtml(note.entity_id || experimentId)}</div>
       <div class="journal-item-body">${note.body_html || ''}</div>
     `;
+    renderMathInElement(article.querySelector('.journal-item-body'));
     return article;
   }
 
@@ -315,6 +357,7 @@
   window.addEventListener('resize', updateActiveRailDot);
 
   sortFeedByActivityDesc();
+  feed?.querySelectorAll('.journal-item-body').forEach((el) => renderMathInElement(el));
   buildRail();
   updateActiveRailDot();
 </script>

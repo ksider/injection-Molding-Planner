@@ -2813,6 +2813,20 @@ tr[data-mode="list"] .settings-range {
   padding: 0;
 }
 
+.journal-item-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.45rem 0;
+}
+
+.journal-item-body th,
+.journal-item-body td {
+  border: 1px solid #ddd8d2;
+  padding: 0.28rem 0.45rem;
+  vertical-align: top;
+  text-align: left;
+}
+
 .journal-item-body .md-checklist {
   list-style: none;
   margin-left: 0;
@@ -2920,8 +2934,8 @@ tr[data-mode="list"] .settings-range {
 
 .notes-drawer-body {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.7rem;
+  grid-template-columns: minmax(320px, 44%) minmax(420px, 56%);
+  gap: 1rem;
   padding: 0.8rem 0.9rem;
   min-height: 0;
 }
@@ -2930,6 +2944,23 @@ tr[data-mode="list"] .settings-range {
   right: 1.1rem;
   top: 50%;
   max-height: none;
+}
+
+.notes-drawer-body.no-compose {
+  grid-template-columns: 1fr;
+}
+
+.notes-pane {
+  min-height: 0;
+}
+
+.notes-pane-compose {
+  border-right: 1px solid var(--border);
+  padding-right: 0.9rem;
+}
+
+.notes-pane-feed {
+  min-width: 0;
 }
 
 .rail-tooltip {
@@ -2963,7 +2994,8 @@ tr[data-mode="list"] .settings-range {
   overflow: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding-right: 2.6rem;
+  padding-right: 2.8rem;
+  height: 100%;
 }
 
 .notes-feed-scroll::-webkit-scrollbar {
@@ -2977,14 +3009,71 @@ body.notes-drawer-open {
 }
 
 .notes-compose {
-  border-top: 1px solid var(--border);
-  padding-top: 0.5rem;
-  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  height: 100%;
 }
 
 .notes-compose textarea {
   width: 100%;
   resize: vertical;
+}
+
+.notes-compose .journal-editor {
+  flex: 1 1 auto;
+  min-height: 220px;
+}
+
+.notes-compose .journal-editor .ProseMirror {
+  min-height: 220px;
+  outline: none;
+  line-height: 1.5;
+}
+
+.notes-compose .journal-editor .ProseMirror h1,
+.notes-compose .journal-editor .ProseMirror h2,
+.notes-compose .journal-editor .ProseMirror h3 {
+  margin: 0.65rem 0 0.35rem;
+}
+
+.notes-compose .journal-editor .ProseMirror p {
+  margin: 0.35rem 0;
+}
+
+.notes-compose .journal-editor .ProseMirror ul,
+.notes-compose .journal-editor .ProseMirror ol {
+  margin: 0.35rem 0 0.35rem 1.1rem;
+}
+
+.notes-compose .journal-editor .ProseMirror blockquote {
+  margin: 0.45rem 0;
+  padding-left: 0.7rem;
+  border-left: 3px solid #d7d7d2;
+  color: #505764;
+}
+
+.notes-compose .journal-editor .ProseMirror table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+}
+
+.notes-compose .journal-editor .ProseMirror th,
+.notes-compose .journal-editor .ProseMirror td {
+  border: 1px solid #ddd8d2;
+  padding: 0.3rem 0.45rem;
+  vertical-align: top;
+}
+
+.notes-compose .journal-editor .ProseMirror .column-resize-handle {
+  background: rgba(45, 120, 210, 0.45);
+  width: 3px;
+}
+
+.notes-compose .journal-editor .ProseMirror img {
+  max-width: 100%;
+  height: auto;
 }
 
 .notes-compose-footer {
@@ -3011,6 +3100,11 @@ body.notes-drawer-open {
   .journal-layout,
   .notes-drawer-body {
     grid-template-columns: 1fr;
+  }
+
+  .notes-pane-compose {
+    border-right: none;
+    padding-right: 0;
   }
 
   .journal-rail,

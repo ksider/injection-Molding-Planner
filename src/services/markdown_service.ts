@@ -15,6 +15,41 @@ turndown.addRule("preserveSubSup", {
   }
 });
 
+turndown.addRule("tableToMarkdown", {
+  filter: "table",
+  replacement(_content, node) {
+    const table = node as HTMLTableElement;
+    const rows = Array.from(table.querySelectorAll("tr"));
+    if (!rows.length) return "";
+
+    const toCellText = (cell: Element) =>
+      (cell.textContent || "")
+        .replace(/\|/g, "\\|")
+        .replace(/\r?\n+/g, " ")
+        .trim();
+
+    const matrix = rows
+      .map((row) => Array.from(row.querySelectorAll("th,td")).map(toCellText))
+      .filter((cells) => cells.length > 0);
+
+    if (!matrix.length) return "";
+
+    const header = matrix[0];
+    const body = matrix.slice(1);
+    const cols = Math.max(1, header.length);
+    const norm = (cells: string[]) => {
+      const next = cells.slice(0, cols);
+      while (next.length < cols) next.push("");
+      return next;
+    };
+
+    const headerRow = `| ${norm(header).join(" | ")} |`;
+    const separator = `| ${new Array(cols).fill("---").join(" | ")} |`;
+    const bodyRows = body.map((cells) => `| ${norm(cells).join(" | ")} |`);
+    return `\n\n${[headerRow, separator, ...bodyRows].join("\n")}\n\n`;
+  }
+});
+
 export function htmlToMarkdown(html: string): string {
   const source = String(html || "").trim();
   if (!source) return "";
@@ -71,10 +106,57 @@ export function markdownToSafeHtml(markdown: string): string {
     }
   };
 
-  for (const line of lines) {
+  const isTableRow = (line: string) => /^\s*\|.+\|\s*$/.test(line);
+  const isTableSeparator = (line: string) =>
+    /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
+  const splitTableRow = (line: string) =>
+    line
+      .trim()
+      .replace(/^\|/, "")
+      .replace(/\|$/, "")
+      .split("|")
+      .map((part) => part.trim());
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
     const text = line.trim();
     if (!text) {
       closeList();
+      continue;
+    }
+
+    const next = lines[i + 1]?.trim() || "";
+    if (isTableRow(text) && isTableSeparator(next)) {
+      closeList();
+      const headerCells = splitTableRow(text);
+      const rows: string[][] = [];
+      i += 2;
+      while (i < lines.length) {
+        const rowLine = lines[i].trim();
+        if (!isTableRow(rowLine)) {
+          i -= 1;
+          break;
+        }
+        rows.push(splitTableRow(rowLine));
+        i += 1;
+      }
+      const maxCols = Math.max(
+        headerCells.length,
+        ...rows.map((row) => row.length),
+        1
+      );
+      const normalize = (cells: string[]) => {
+        const nextCells = cells.slice(0, maxCols);
+        while (nextCells.length < maxCols) nextCells.push("");
+        return nextCells;
+      };
+      const thead = `<tr>${normalize(headerCells)
+        .map((cell) => `<th>${renderInline(cell)}</th>`)
+        .join("")}</tr>`;
+      const tbody = rows
+        .map((row) => `<tr>${normalize(row).map((cell) => `<td>${renderInline(cell)}</td>`).join("")}</tr>`)
+        .join("");
+      chunks.push(`<table><thead>${thead}</thead><tbody>${tbody}</tbody></table>`);
       continue;
     }
 

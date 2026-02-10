@@ -43,24 +43,103 @@
     </div>
   </div>
 
-  <div class="notes-drawer-body">
+  <div class="notes-drawer-body <%= canWrite ? 'has-compose' : 'no-compose' %>">
     <aside class="journal-rail" data-entity-notes-rail></aside>
-    <section class="notes-feed-scroll">
-      <div class="journal-feed" data-entity-notes-feed>
-        <div class="small-note">Loading...</div>
-      </div>
-
-      <% if (canWrite) { %>
+    <% if (canWrite) { %>
+      <section class="notes-pane notes-pane-compose">
         <div class="notes-compose">
-          <div class="journal-toolbar" role="toolbar" aria-label="Notes formatting">
-            <button class="pure-button" type="button" data-entity-notes-cmd="undo" title="Undo">↶</button>
-            <button class="pure-button" type="button" data-entity-notes-cmd="redo" title="Redo">↷</button>
-            <button class="pure-button" type="button" data-entity-notes-cmd="bold" title="Bold">B</button>
-            <button class="pure-button" type="button" data-entity-notes-cmd="italic" title="Italic">I</button>
-            <button class="pure-button" type="button" data-entity-notes-cmd="underline" title="Underline">U</button>
-            <button class="pure-button" type="button" data-entity-notes-cmd="insertUnorderedList" title="Bullet list">List</button>
-            <button class="pure-button" type="button" data-entity-notes-link title="Link">Link</button>
-            <button class="pure-button" type="button" data-entity-notes-code title="Code">Code</button>
+          <div class="editor-toolbar notes-editor-toolbar" data-entity-notes-toolbar role="toolbar" aria-label="Notes formatting">
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="undo" title="Undo"><span class="material-symbols-rounded">undo</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="redo" title="Redo"><span class="material-symbols-rounded">redo</span></button>
+            <span class="toolbar-sep" aria-hidden="true"></span>
+            <select class="toolbar-select" data-entity-notes-font-family title="Font family">
+              <option value="">Font</option>
+              <option value="Trebuchet MS">Trebuchet</option>
+              <option value="Georgia">Georgia</option>
+              <option value="Arial">Arial</option>
+              <option value="Courier New">Courier</option>
+            </select>
+            <select class="toolbar-select" data-entity-notes-font-size title="Font size">
+              <option value="">Size</option>
+              <option value="12px">12</option>
+              <option value="14px">14</option>
+              <option value="16px">16</option>
+              <option value="18px">18</option>
+              <option value="20px">20</option>
+              <option value="24px">24</option>
+              <option value="28px">28</option>
+            </select>
+            <select class="toolbar-select" data-entity-notes-line-height title="Line height">
+              <option value="">Line</option>
+              <option value="1.2">1.2</option>
+              <option value="1.35">1.35</option>
+              <option value="1.5">1.5</option>
+              <option value="1.65">1.65</option>
+              <option value="1.8">1.8</option>
+              <option value="2">2</option>
+            </select>
+            <select class="toolbar-select" data-entity-notes-preset title="Text style preset">
+              <option value="">Preset</option>
+              <option value="body">Body</option>
+              <option value="subtitle">Subtitle</option>
+              <option value="note">Note</option>
+              <option value="emphasis">Emphasis</option>
+            </select>
+            <span class="toolbar-sep" aria-hidden="true"></span>
+            <button class="pure-button button-sm" type="button" data-entity-notes-cmd="h1">H1</button>
+            <button class="pure-button button-sm" type="button" data-entity-notes-cmd="h2">H2</button>
+            <button class="pure-button button-sm" type="button" data-entity-notes-cmd="h3">H3</button>
+            <span class="toolbar-sep" aria-hidden="true"></span>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="bold" title="Bold"><span class="material-symbols-rounded">format_bold</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="italic" title="Italic"><span class="material-symbols-rounded">format_italic</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="underline" title="Underline"><span class="material-symbols-rounded">format_underlined</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="strike" title="Strike"><span class="material-symbols-rounded">strikethrough_s</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="highlight" title="Highlight"><span class="material-symbols-rounded">ink_highlighter</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="superscript" title="Superscript"><span class="material-symbols-rounded">superscript</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="subscript" title="Subscript"><span class="material-symbols-rounded">subscript</span></button>
+            <span class="toolbar-sep" aria-hidden="true"></span>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="bullet" title="Bullet list"><span class="material-symbols-rounded">format_list_bulleted</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="ordered" title="Ordered list"><span class="material-symbols-rounded">format_list_numbered</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="checklist" title="Checklist"><span class="material-symbols-rounded">checklist</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="quote" title="Quote"><span class="material-symbols-rounded">format_quote</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="code" title="Code block"><span class="material-symbols-rounded">code_blocks</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="hr" title="Divider"><span class="material-symbols-rounded">horizontal_rule</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="math-inline" title="Inline formula"><span class="material-symbols-rounded">functions</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="math-block" title="Block formula"><span class="material-symbols-rounded">calculate</span></button>
+            <span class="toolbar-sep" aria-hidden="true"></span>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="align-left" title="Align left"><span class="material-symbols-rounded">format_align_left</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="align-center" title="Align center"><span class="material-symbols-rounded">format_align_center</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="align-right" title="Align right"><span class="material-symbols-rounded">format_align_right</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="align-justify" title="Justify"><span class="material-symbols-rounded">format_align_justify</span></button>
+            <span class="toolbar-sep" aria-hidden="true"></span>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="link" title="Link"><span class="material-symbols-rounded">link</span></button>
+            <button class="pure-button button-sm icon-only" type="button" data-entity-notes-cmd="image" title="Image"><span class="material-symbols-rounded">image</span></button>
+            <div class="image-tools toolbar-conditional" data-entity-notes-image-tools title="Image tools">
+              <button class="pure-button button-sm image-op" type="button" data-entity-notes-cmd="image-width-25" title="Image width 25%">25%</button>
+              <button class="pure-button button-sm image-op" type="button" data-entity-notes-cmd="image-width-50" title="Image width 50%">50%</button>
+              <button class="pure-button button-sm image-op" type="button" data-entity-notes-cmd="image-width-75" title="Image width 75%">75%</button>
+              <button class="pure-button button-sm image-op" type="button" data-entity-notes-cmd="image-width-100" title="Image width 100%">100%</button>
+              <button class="pure-button button-sm image-op" type="button" data-entity-notes-cmd="image-align-left" title="Align image left">L</button>
+              <button class="pure-button button-sm image-op" type="button" data-entity-notes-cmd="image-align-center" title="Align image center">C</button>
+              <button class="pure-button button-sm image-op" type="button" data-entity-notes-cmd="image-align-right" title="Align image right">R</button>
+              <button class="pure-button button-sm image-op danger" type="button" data-entity-notes-cmd="image-delete" title="Delete image">Del</button>
+            </div>
+            <div class="table-tools" title="Table tools">
+              <button class="pure-button button-sm icon-only" type="button" data-entity-notes-table-picker-toggle title="Insert table">
+                <span class="material-symbols-rounded">table</span>
+              </button>
+              <div class="table-picker" data-entity-notes-table-picker hidden>
+                <div class="table-picker-label" data-entity-notes-table-picker-label>3 x 3</div>
+                <div class="table-picker-grid" data-entity-notes-table-picker-grid></div>
+              </div>
+              <div class="table-ops toolbar-conditional" data-entity-notes-table-ops>
+                <button class="pure-button button-sm table-op" type="button" data-entity-notes-cmd="table-row-add" title="Add row">R+</button>
+                <button class="pure-button button-sm table-op" type="button" data-entity-notes-cmd="table-row-del" title="Delete row">R-</button>
+                <button class="pure-button button-sm table-op" type="button" data-entity-notes-cmd="table-col-add" title="Add column">C+</button>
+                <button class="pure-button button-sm table-op" type="button" data-entity-notes-cmd="table-col-del" title="Delete column">C-</button>
+                <button class="pure-button button-sm table-op danger" type="button" data-entity-notes-cmd="table-del" title="Delete table">Del</button>
+              </div>
+            </div>
           </div>
           <div class="journal-editor" contenteditable="true" data-entity-notes-input data-placeholder="Write note for this entity..."></div>
           <div class="notes-compose-footer">
@@ -68,7 +147,14 @@
             <button class="pure-button pure-button-primary" type="button" data-entity-notes-send>Add note</button>
           </div>
         </div>
-      <% } %>
+      </section>
+    <% } %>
+    <section class="notes-pane notes-pane-feed">
+      <section class="notes-feed-scroll">
+        <div class="journal-feed" data-entity-notes-feed>
+          <div class="small-note">Loading...</div>
+        </div>
+      </section>
     </section>
   </div>
 </aside>
@@ -94,7 +180,24 @@
     const feedScroll = drawer.querySelector('.notes-feed-scroll');
     const input = drawer.querySelector('[data-entity-notes-input]');
     const sendBtn = drawer.querySelector('[data-entity-notes-send]');
+    const toolbar = drawer.querySelector('[data-entity-notes-toolbar]');
+    const fontFamilySelect = toolbar?.querySelector('[data-entity-notes-font-family]') || null;
+    const fontSizeSelect = toolbar?.querySelector('[data-entity-notes-font-size]') || null;
+    const lineHeightSelect = toolbar?.querySelector('[data-entity-notes-line-height]') || null;
+    const presetSelect = toolbar?.querySelector('[data-entity-notes-preset]') || null;
+    const imageToolsGroup = toolbar?.querySelector('[data-entity-notes-image-tools]') || null;
+    const tableOpsGroup = toolbar?.querySelector('[data-entity-notes-table-ops]') || null;
+    const tablePickerToggle = toolbar?.querySelector('[data-entity-notes-table-picker-toggle]') || null;
+    const tablePicker = toolbar?.querySelector('[data-entity-notes-table-picker]') || null;
+    const tablePickerGrid = toolbar?.querySelector('[data-entity-notes-table-picker-grid]') || null;
+    const tablePickerLabel = toolbar?.querySelector('[data-entity-notes-table-picker-label]') || null;
+    let notesEditor = null;
+    let notesEditorReady = null;
     let railTooltipEl = null;
+    let mathRenderer = null;
+    let mathRendererLoader = null;
+    let pickerRows = 3;
+    let pickerCols = 3;
 
     const ensureRailTooltip = () => {
       if (railTooltipEl && document.body.contains(railTooltipEl)) return railTooltipEl;
@@ -132,6 +235,296 @@
     const esc = (value) =>
       String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 
+    const setSelectValueSafe = (selectEl, value) => {
+      if (!selectEl) return;
+      if (!value) {
+        selectEl.value = '';
+        return;
+      }
+      const options = Array.from(selectEl.options).map((opt) => opt.value);
+      selectEl.value = options.includes(value) ? value : '';
+    };
+
+    const normalizeFontFamily = (raw) => {
+      if (!raw) return '';
+      const first = String(raw).split(',')[0]?.trim().replace(/^['"]|['"]$/g, '') || '';
+      const map = { 'Trebuchet MS': 'Trebuchet MS', Georgia: 'Georgia', Arial: 'Arial', 'Courier New': 'Courier New' };
+      return map[first] || '';
+    };
+
+    const normalizeLineHeight = (raw, fontSizePx) => {
+      if (!raw) return '';
+      const text = String(raw).trim().toLowerCase();
+      if (!text || text === 'normal') return '';
+      if (text.endsWith('px') && Number.isFinite(fontSizePx) && fontSizePx > 0) {
+        const px = Number.parseFloat(text);
+        if (!Number.isFinite(px)) return '';
+        const ratio = px / fontSizePx;
+        const allowed = ['1.2', '1.35', '1.5', '1.65', '1.8', '2'];
+        const nearest = allowed.map((v) => Number(v)).reduce((best, cur) => (Math.abs(cur - ratio) < Math.abs(best - ratio) ? cur : best), 1.5);
+        return String(nearest);
+      }
+      return text;
+    };
+
+    const readSelectionComputedStyle = () => {
+      const sel = window.getSelection();
+      const node = sel?.anchorNode || null;
+      const el = node && node.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
+      if (!el || !(el instanceof Element)) return null;
+      const style = window.getComputedStyle(el);
+      const fontSizeRaw = style.fontSize || '';
+      const fontSizeNum = fontSizeRaw.endsWith('px') ? Number.parseFloat(fontSizeRaw) : Number.NaN;
+      return {
+        fontFamily: normalizeFontFamily(style.fontFamily),
+        fontSize: fontSizeRaw && fontSizeRaw.endsWith('px') ? `${Math.round(fontSizeNum)}px` : '',
+        lineHeight: normalizeLineHeight(style.lineHeight, fontSizeNum)
+      };
+    };
+
+    const ensureKatexCss = () => {
+      if (document.getElementById('katex-css')) return;
+      const link = document.createElement('link');
+      link.id = 'katex-css';
+      link.rel = 'stylesheet';
+      link.href = 'https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css';
+      document.head.appendChild(link);
+    };
+
+    const ensureMathRenderer = async () => {
+      if (mathRenderer) return mathRenderer;
+      if (mathRendererLoader) return mathRendererLoader;
+      ensureKatexCss();
+      mathRendererLoader = import('https://esm.sh/katex@0.16.11/contrib/auto-render.mjs')
+        .then((mod) => {
+          mathRenderer = mod.default || mod.renderMathInElement || null;
+          return mathRenderer;
+        })
+        .catch(() => null);
+      return mathRendererLoader;
+    };
+
+    const renderMathInElement = (el) => {
+      if (!el || el.dataset.mathRendered === '1') return;
+      ensureMathRenderer().then((renderFn) => {
+        if (!renderFn) return;
+        renderFn(el, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '\\\\[', right: '\\\\]', display: true },
+            { left: '$', right: '$', display: false },
+            { left: '\\\\(', right: '\\\\)', display: false }
+          ],
+          throwOnError: false
+        });
+        el.dataset.mathRendered = '1';
+      });
+    };
+
+    const ensureNotesEditor = async () => {
+      if (!input) return null;
+      if (notesEditor) return notesEditor;
+      if (notesEditorReady) return notesEditorReady;
+      notesEditorReady = (async () => {
+        ensureKatexCss();
+        const [{ Editor }, { default: StarterKit }, { default: Underline }, { default: Link }, { default: Image }, { default: TextAlign }, { Table }, { default: TableRow }, { default: TableHeader }, { default: TableCell }, { default: TaskList }, { default: TaskItem }, { default: Superscript }, { default: Subscript }, { default: Highlight }, textStyleModule, { FontFamily }, mathModule] = await Promise.all([
+          import('https://esm.sh/@tiptap/core@3.19.0'),
+          import('https://esm.sh/@tiptap/starter-kit@3.19.0'),
+          import('https://esm.sh/@tiptap/extension-underline@3.19.0'),
+          import('https://esm.sh/@tiptap/extension-link@3.19.0'),
+          import('https://esm.sh/@tiptap/extension-image@3.19.0'),
+          import('https://esm.sh/@tiptap/extension-text-align@3.19.0'),
+          import('https://esm.sh/@tiptap/extension-table@3.19.0'),
+          import('https://esm.sh/@tiptap/extension-table-row@3.19.0'),
+          import('https://esm.sh/@tiptap/extension-table-header@3.19.0'),
+          import('https://esm.sh/@tiptap/extension-table-cell@3.19.0'),
+          import('https://esm.sh/@tiptap/extension-task-list@3.19.0'),
+          import('https://esm.sh/@tiptap/extension-task-item@3.19.0'),
+          import('https://esm.sh/@tiptap/extension-superscript@3.19.0'),
+          import('https://esm.sh/@tiptap/extension-subscript@3.19.0'),
+          import('https://esm.sh/@tiptap/extension-highlight@3.19.0'),
+          import('https://esm.sh/@tiptap/extension-text-style@3.19.0'),
+          import('https://esm.sh/@tiptap/extension-font-family@3.19.0'),
+          import('https://esm.sh/@aarkue/tiptap-math-extension@1.4.0').catch(() => null)
+        ]);
+        const { TextStyle, FontSize, LineHeight } = textStyleModule;
+        const MathExtension = mathModule?.default || null;
+        notesEditor = new Editor({
+          element: input,
+          editable: true,
+          extensions: [
+            StarterKit.configure({
+              heading: { levels: [1, 2, 3] },
+              link: false,
+              underline: false
+            }),
+            Underline,
+            TextStyle,
+            FontFamily,
+            FontSize,
+            LineHeight,
+            Superscript,
+            Subscript,
+            Highlight.configure({ multicolor: true }),
+            Link.configure({ openOnClick: false }),
+            Image.configure({ allowBase64: true }),
+            TextAlign.configure({ types: ['heading', 'paragraph'] }),
+            TaskList,
+            TaskItem.configure({ nested: true }),
+            Table.configure({ resizable: true }),
+            TableRow,
+            TableHeader,
+            TableCell,
+            ...(MathExtension ? [MathExtension.configure({ addInlineMath: true, evaluation: false })] : [])
+          ],
+          content: '<p></p>'
+        });
+        const syncTextControlsFromSelection = () => {
+          if (!notesEditor) return;
+          const textStyleAttrs = notesEditor.getAttributes('textStyle') || {};
+          const paragraphAttrs = notesEditor.getAttributes('paragraph') || {};
+          const headingAttrs = notesEditor.getAttributes('heading') || {};
+          const computed = readSelectionComputedStyle();
+          const fontFamily = textStyleAttrs.fontFamily || computed?.fontFamily || '';
+          const fontSize = textStyleAttrs.fontSize || computed?.fontSize || '';
+          const lineHeight = textStyleAttrs.lineHeight || paragraphAttrs.lineHeight || headingAttrs.lineHeight || computed?.lineHeight || '';
+          setSelectValueSafe(fontFamilySelect, fontFamily);
+          setSelectValueSafe(fontSizeSelect, fontSize);
+          setSelectValueSafe(lineHeightSelect, lineHeight);
+        };
+        const syncContextToolsVisibility = () => {
+          if (!notesEditor) return;
+          imageToolsGroup?.classList.toggle('is-visible', notesEditor.isActive('image'));
+          tableOpsGroup?.classList.toggle('is-visible', notesEditor.isActive('table'));
+        };
+        notesEditor.on('selectionUpdate', syncTextControlsFromSelection);
+        notesEditor.on('transaction', syncTextControlsFromSelection);
+        notesEditor.on('selectionUpdate', syncContextToolsVisibility);
+        notesEditor.on('transaction', syncContextToolsVisibility);
+        syncTextControlsFromSelection();
+        syncContextToolsVisibility();
+        notesEditor.view.dom.addEventListener('keydown', (event) => {
+          if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+            event.preventDefault();
+            submit(Boolean(event.shiftKey));
+          }
+        }, true);
+        return notesEditor;
+      })();
+      return notesEditorReady;
+    };
+
+    const closeTablePicker = () => {
+      if (!tablePicker) return;
+      tablePicker.hidden = true;
+    };
+
+    const paintTablePicker = () => {
+      if (!tablePickerGrid) return;
+      tablePickerGrid.querySelectorAll('.table-picker-cell').forEach((cell) => {
+        const row = Number(cell.getAttribute('data-row') || '0');
+        const col = Number(cell.getAttribute('data-col') || '0');
+        cell.classList.toggle('active', row <= pickerRows && col <= pickerCols);
+      });
+      if (tablePickerLabel) tablePickerLabel.textContent = `${pickerRows} x ${pickerCols}`;
+    };
+
+    const initTablePicker = () => {
+      if (!tablePickerGrid || tablePickerGrid.childElementCount > 0) return;
+      for (let r = 1; r <= 10; r += 1) {
+        for (let c = 1; c <= 10; c += 1) {
+          const cell = document.createElement('button');
+          cell.type = 'button';
+          cell.className = 'table-picker-cell';
+          cell.setAttribute('data-row', String(r));
+          cell.setAttribute('data-col', String(c));
+          cell.setAttribute('aria-label', `Insert ${r} by ${c} table`);
+          cell.addEventListener('mouseenter', () => {
+            pickerRows = r;
+            pickerCols = c;
+            paintTablePicker();
+          });
+          cell.addEventListener('click', async () => {
+            await execEditorCommand('table', { rows: r, cols: c });
+            closeTablePicker();
+          });
+          tablePickerGrid.appendChild(cell);
+        }
+      }
+      paintTablePicker();
+      tablePickerToggle?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (!tablePicker) return;
+        tablePicker.hidden = !tablePicker.hidden;
+      });
+      tablePicker?.addEventListener('click', (event) => event.stopPropagation());
+      document.addEventListener('click', closeTablePicker);
+    };
+
+    const execEditorCommand = async (command, options = {}) => {
+      const editor = await ensureNotesEditor();
+      if (!editor) return;
+      const chain = editor.chain().focus();
+      if (command === 'h1') chain.toggleHeading({ level: 1 }).run();
+      if (command === 'h2') chain.toggleHeading({ level: 2 }).run();
+      if (command === 'h3') chain.toggleHeading({ level: 3 }).run();
+      if (command === 'bold') chain.toggleBold().run();
+      if (command === 'italic') chain.toggleItalic().run();
+      if (command === 'underline') chain.toggleUnderline().run();
+      if (command === 'strike') chain.toggleStrike().run();
+      if (command === 'highlight') chain.toggleHighlight().run();
+      if (command === 'superscript') chain.toggleSuperscript().run();
+      if (command === 'subscript') chain.toggleSubscript().run();
+      if (command === 'bullet') chain.toggleBulletList().run();
+      if (command === 'ordered') chain.toggleOrderedList().run();
+      if (command === 'checklist') chain.toggleTaskList().run();
+      if (command === 'quote') chain.toggleBlockquote().run();
+      if (command === 'code') chain.toggleCodeBlock().run();
+      if (command === 'align-left') chain.setTextAlign('left').run();
+      if (command === 'align-center') chain.setTextAlign('center').run();
+      if (command === 'align-right') chain.setTextAlign('right').run();
+      if (command === 'align-justify') chain.setTextAlign('justify').run();
+      if (command === 'hr') chain.setHorizontalRule().run();
+      if (command === 'undo') chain.undo().run();
+      if (command === 'redo') chain.redo().run();
+      if (command === 'table') chain.insertTable({ rows: Number(options.rows) || 3, cols: Number(options.cols) || 3, withHeaderRow: true }).run();
+      if (command === 'table-row-add') chain.addRowAfter().run();
+      if (command === 'table-row-del') chain.deleteRow().run();
+      if (command === 'table-col-add') chain.addColumnAfter().run();
+      if (command === 'table-col-del') chain.deleteColumn().run();
+      if (command === 'table-del') chain.deleteTable().run();
+      if (command === 'link') {
+        const previous = editor.getAttributes('link').href || '';
+        const href = window.prompt('Link URL', previous);
+        if (href === null) return;
+        if (href.trim() === '') chain.extendMarkRange('link').unsetLink().run();
+        else chain.extendMarkRange('link').setLink({ href: href.trim() }).run();
+      }
+      if (command === 'image') {
+        const src = window.prompt('Image URL');
+        if (!src) return;
+        chain.setImage({ src: src.trim() }).run();
+      }
+      if (command === 'image-width-25') chain.updateAttributes('image', { width: '25%' }).run();
+      if (command === 'image-width-50') chain.updateAttributes('image', { width: '50%' }).run();
+      if (command === 'image-width-75') chain.updateAttributes('image', { width: '75%' }).run();
+      if (command === 'image-width-100') chain.updateAttributes('image', { width: '100%' }).run();
+      if (command === 'image-align-left') chain.updateAttributes('image', { align: 'left' }).run();
+      if (command === 'image-align-center') chain.updateAttributes('image', { align: 'center' }).run();
+      if (command === 'image-align-right') chain.updateAttributes('image', { align: 'right' }).run();
+      if (command === 'image-delete' && editor.isActive('image')) chain.deleteSelection().run();
+      if (command === 'math-inline') {
+        const latex = window.prompt('Formula (inline)', 'x^2');
+        if (!latex) return;
+        chain.insertContent({ type: 'inlineMath', attrs: { latex: latex.trim(), evaluate: 'no', display: 'no' } }).run();
+      }
+      if (command === 'math-block') {
+        const latex = window.prompt('Formula (block)', '\\\\sum_{i=1}^{n} x_i');
+        if (!latex) return;
+        chain.insertContent({ type: 'inlineMath', attrs: { latex: latex.trim(), evaluate: 'no', display: 'yes' } }).run();
+      }
+    };
+
     const renderNote = (note) => {
       const entity = String(note.entity_type || 'experiment');
       const article = document.createElement('article');
@@ -152,6 +545,7 @@
         </div>
         <div class="journal-item-body">${note.body_html || ''}</div>
       `;
+      renderMathInElement(article.querySelector('.journal-item-body'));
       return article;
     };
 
@@ -229,12 +623,12 @@
       }
       notes
         .slice()
-        .sort((a, b) => new Date(a.activity_at || a.updated_at || a.created_at || 0).getTime() - new Date(b.activity_at || b.updated_at || b.created_at || 0).getTime())
+        .sort((a, b) => new Date(b.activity_at || b.updated_at || b.created_at || 0).getTime() - new Date(a.activity_at || a.updated_at || a.created_at || 0).getTime())
         .forEach((note) => feed.appendChild(renderNote(note)));
       applyFilters(searchInput?.value || '', dateInput?.value || '');
       rebuildRail();
       if (feedScroll) {
-        feedScroll.scrollTop = feedScroll.scrollHeight;
+        feedScroll.scrollTop = 0;
       }
     };
 
@@ -253,21 +647,15 @@
       rebuildRail();
     };
 
-    const sortFeedByActivityAsc = () => {
+    const sortFeedByActivityDesc = () => {
       if (!feed) return;
       const cards = Array.from(feed.querySelectorAll('.journal-item'));
       cards.sort((a, b) => {
         const at = new Date(a.dataset.createdAt || 0).getTime();
         const bt = new Date(b.dataset.createdAt || 0).getTime();
-        return at - bt;
+        return bt - at;
       });
       cards.forEach((card) => feed.appendChild(card));
-    };
-
-    const exec = (cmd, value) => {
-      if (!input) return;
-      input.focus();
-      document.execCommand(cmd, false, value);
     };
 
     const upsertNote = (note) => {
@@ -277,13 +665,16 @@
       const card = renderNote(note);
       if (existing) existing.replaceWith(card);
       else feed.appendChild(card);
-      sortFeedByActivityAsc();
+      sortFeedByActivityDesc();
     };
 
     const submit = async (forceNew = false) => {
       if (!input || !sendBtn) return;
-      const bodyHtml = input.innerHTML.trim();
-      if (!bodyHtml || !input.textContent || input.textContent.trim().length === 0) return;
+      const editor = await ensureNotesEditor();
+      if (!editor) return;
+      const bodyHtml = editor.getHTML().trim();
+      const bodyText = editor.getText().trim();
+      if (!bodyHtml || !bodyText) return;
       sendBtn.disabled = true;
       const payload = new URLSearchParams();
       payload.set('entity_type', entityType);
@@ -299,11 +690,11 @@
         const data = await resp.json();
         if (!resp.ok || !data?.note) return;
         upsertNote(data.note);
-        input.innerHTML = '';
+        editor.commands.clearContent(true);
         applyFilters(searchInput?.value || '', dateInput?.value || '');
         rebuildRail();
         if (feedScroll) {
-          feedScroll.scrollTop = feedScroll.scrollHeight;
+          feedScroll.scrollTop = 0;
         }
       } finally {
         sendBtn.disabled = false;
@@ -318,7 +709,7 @@
       if (willOpen) {
         await loadNotes();
         if (feedScroll) {
-          feedScroll.scrollTop = feedScroll.scrollHeight;
+          feedScroll.scrollTop = 0;
         }
         toggle.style.display = 'none';
         if (journalToggle) journalToggle.style.display = 'none';
@@ -336,21 +727,7 @@
     });
 
     drawer.querySelectorAll('[data-entity-notes-cmd]').forEach((btn) => {
-      btn.addEventListener('click', () => exec(btn.getAttribute('data-entity-notes-cmd') || 'bold'));
-    });
-    drawer.querySelectorAll('[data-entity-notes-link]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const url = window.prompt('Enter URL', 'https://');
-        if (!url) return;
-        exec('createLink', url);
-      });
-    });
-    drawer.querySelectorAll('[data-entity-notes-code]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const sel = window.getSelection();
-        const text = sel && sel.rangeCount ? sel.toString() : '';
-        exec('insertHTML', `<code>${esc(text || 'code')}</code>`);
-      });
+      btn.addEventListener('click', () => execEditorCommand(btn.getAttribute('data-entity-notes-cmd') || ''));
     });
     feed?.addEventListener('click', async (event) => {
       const target = event.target;
@@ -375,12 +752,53 @@
     feedScroll?.addEventListener('scroll', updateActiveRailDot, { passive: true });
     window.addEventListener('resize', updateActiveRailDot);
     sendBtn?.addEventListener('click', submit);
-    input?.addEventListener('keydown', (event) => {
-      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-        event.preventDefault();
-        submit(Boolean(event.shiftKey));
-      }
+    fontFamilySelect?.addEventListener('change', async () => {
+      const editor = await ensureNotesEditor();
+      if (!editor) return;
+      const value = fontFamilySelect.value;
+      const chain = editor.chain().focus();
+      if (!value) chain.unsetFontFamily().run();
+      else chain.setFontFamily(value).run();
     });
+    fontSizeSelect?.addEventListener('change', async () => {
+      const editor = await ensureNotesEditor();
+      if (!editor) return;
+      const value = fontSizeSelect.value;
+      const chain = editor.chain().focus();
+      if (!value) chain.unsetFontSize().run();
+      else chain.setFontSize(value).run();
+    });
+    lineHeightSelect?.addEventListener('change', async () => {
+      const editor = await ensureNotesEditor();
+      if (!editor) return;
+      const value = lineHeightSelect.value;
+      const chain = editor.chain().focus();
+      if (!value) chain.unsetLineHeight().run();
+      else chain.setLineHeight(value).run();
+    });
+    presetSelect?.addEventListener('change', async () => {
+      const editor = await ensureNotesEditor();
+      if (!editor) return;
+      const preset = presetSelect.value;
+      if (preset === 'body') editor.chain().focus().setParagraph().setFontSize('16px').setLineHeight('1.5').unsetBold().unsetItalic().unsetUnderline().unsetHighlight().run();
+      if (preset === 'subtitle') editor.chain().focus().setHeading({ level: 3 }).setFontSize('20px').setLineHeight('1.35').setBold().unsetItalic().unsetUnderline().unsetHighlight().run();
+      if (preset === 'note') editor.chain().focus().setParagraph().setFontSize('15px').setLineHeight('1.65').unsetBold().setItalic().unsetUnderline().unsetHighlight().run();
+      if (preset === 'emphasis') editor.chain().focus().setParagraph().setFontSize('18px').setLineHeight('1.5').setBold().unsetItalic().setUnderline().setHighlight().run();
+      presetSelect.value = '';
+    });
+    document.addEventListener('keydown', (event) => {
+      if (!(event.ctrlKey || event.metaKey) || event.key !== 'Enter') return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (!input) return;
+      const active = document.activeElement;
+      const insideEditor = input.contains(target) || (active instanceof Element && input.contains(active));
+      if (!insideEditor) return;
+      event.preventDefault();
+      submit(Boolean(event.shiftKey));
+    }, true);
+    ensureNotesEditor();
+    initTablePicker();
 
     const openInitially = drawer.classList.contains('is-open');
     if (openInitially) {
