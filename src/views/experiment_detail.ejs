@@ -12,9 +12,6 @@
         </div>
       </div>
       <div class="section-actions">
-        <a class="icon-button" href="/experiments/<%= experiment.id %>/journal" title="Open journal">
-          <span class="material-symbols-rounded" aria-hidden="true">menu_book</span>
-        </a>
         <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'engineer')) { %>
           <button class="icon-button" type="button" id="openMachineEdit" title="Edit experiment">
             <span class="material-symbols-rounded" aria-hidden="true">edit</span>
@@ -228,6 +225,14 @@
 </div>
 
 <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager' || currentUser.role === 'engineer')) { %>
+  <a
+    class="icon-button notes-journal-toggle"
+    id="notesJournalToggle"
+    href="/experiments/<%= experiment.id %>/journal"
+    title="Open journal"
+  >
+    <span class="material-symbols-rounded" aria-hidden="true">menu_book</span>
+  </a>
   <button
     class="icon-button notes-drawer-toggle"
     type="button"
@@ -239,16 +244,8 @@
   </button>
 
   <aside class="notes-drawer" id="notesDrawer" aria-label="Experiment notes">
-    <div class="notes-drawer-head">
+    <div class="notes-drawer-head notes-drawer-head-inline">
       <strong>Notes</strong>
-      <div class="section-actions">
-        <a class="pure-button" href="/experiments/<%= experiment.id %>/journal">Open in journal</a>
-        <button class="icon-button" type="button" id="notesDrawerClose" title="Hide notes">
-          <span class="material-symbols-rounded" aria-hidden="true">expand_more</span>
-        </button>
-      </div>
-    </div>
-    <div class="notes-drawer-toolbar">
       <label class="toggle" title="Only current context">
         <input type="checkbox" id="notesOnlyCurrentToggle">
         <span class="track"></span>
@@ -257,6 +254,14 @@
       <span class="small-note">Context: Experiment #<%= experiment.id %></span>
       <input class="notes-search" type="date" id="notesDateInput" title="Filter by date">
       <input class="notes-search" type="search" id="notesSearchInput" placeholder="Search notes">
+      <div class="section-actions">
+        <a class="icon-button" href="/experiments/<%= experiment.id %>/journal" title="Open journal">
+          <span class="material-symbols-rounded" aria-hidden="true">menu_book</span>
+        </a>
+        <button class="icon-button" type="button" id="notesDrawerClose" title="Hide notes">
+          <span class="material-symbols-rounded" aria-hidden="true">expand_more</span>
+        </button>
+      </div>
     </div>
     <div class="notes-drawer-body">
       <aside class="journal-rail" id="notesRail"></aside>
@@ -906,6 +911,7 @@
   let currentTaskId = null;
   const notesDrawer = document.getElementById('notesDrawer');
   const notesDrawerToggle = document.getElementById('notesDrawerToggle');
+  const notesJournalToggle = document.getElementById('notesJournalToggle');
   const notesDrawerClose = document.getElementById('notesDrawerClose');
   const notesOnlyCurrentToggle = document.getElementById('notesOnlyCurrentToggle');
   const notesFeed = document.getElementById('notesFeed');
@@ -916,6 +922,40 @@
   const notesSendBtn = document.getElementById('notesSendBtn');
   const notesDateInput = document.getElementById('notesDateInput');
   const notesSearchInput = document.getElementById('notesSearchInput');
+  let railTooltipEl = null;
+
+  function ensureRailTooltip() {
+    if (railTooltipEl && document.body.contains(railTooltipEl)) return railTooltipEl;
+    railTooltipEl = document.getElementById('railTooltip');
+    if (!railTooltipEl) {
+      railTooltipEl = document.createElement('div');
+      railTooltipEl.id = 'railTooltip';
+      railTooltipEl.className = 'rail-tooltip';
+      document.body.appendChild(railTooltipEl);
+    }
+    return railTooltipEl;
+  }
+
+  function bindRailTooltip(dot, text) {
+    const tip = ensureRailTooltip();
+    const showAt = (x, y) => {
+      tip.textContent = text;
+      tip.classList.add('is-visible');
+      const rect = tip.getBoundingClientRect();
+      const left = Math.max(8, x - rect.width - 14);
+      const top = Math.min(window.innerHeight - rect.height - 8, Math.max(8, y - rect.height / 2));
+      tip.style.left = `${left}px`;
+      tip.style.top = `${top}px`;
+    };
+    dot.addEventListener('mouseenter', (event) => showAt(event.clientX, event.clientY));
+    dot.addEventListener('mousemove', (event) => showAt(event.clientX, event.clientY));
+    dot.addEventListener('mouseleave', () => tip.classList.remove('is-visible'));
+    dot.addEventListener('focus', () => {
+      const r = dot.getBoundingClientRect();
+      showAt(r.left, r.top + r.height / 2);
+    });
+    dot.addEventListener('blur', () => tip.classList.remove('is-visible'));
+  }
 
   function notesEscapeHtml(value) {
     return String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
@@ -950,13 +990,55 @@
       const entity = item.dataset.entityType || 'experiment';
       const dot = document.createElement('button');
       dot.type = 'button';
+      dot.dataset.noteId = String(item.dataset.noteId || '');
       dot.className = `journal-rail-dot entity-${entity}`;
-      const stamp = item.querySelector('.journal-item-head .small-note')?.textContent || `Note ${index + 1}`;
-      dot.title = stamp;
-      dot.setAttribute('aria-label', stamp);
+      const title = item.querySelector('.journal-item-head strong')?.textContent?.trim() || `Note ${index + 1}`;
+      const stamp = item.querySelector('.journal-item-head .small-note')?.textContent?.trim() || '';
+      const tooltip = stamp ? `${title} · ${stamp}` : title;
+      dot.dataset.tooltip = tooltip;
+      dot.title = tooltip;
+      dot.setAttribute('aria-label', tooltip);
+      bindRailTooltip(dot, tooltip);
       dot.addEventListener('click', () => item.scrollIntoView({ behavior: 'smooth', block: 'start' }));
       notesRail.appendChild(dot);
     });
+    updateActiveNotesRailDot();
+  }
+
+  function updateActiveNotesRailDot() {
+    if (!notesRail || !notesFeed) return;
+    const dots = Array.from(notesRail.querySelectorAll('.journal-rail-dot'));
+    if (!dots.length) return;
+    const items = Array.from(notesFeed.querySelectorAll('.journal-item')).filter((item) => item.style.display !== 'none');
+    if (!items.length) {
+      dots.forEach((dot) => dot.classList.remove('is-active'));
+      return;
+    }
+    const container = notesFeedScroll;
+    const viewportTop = container ? container.getBoundingClientRect().top : 0;
+    const viewportHeight = container ? container.getBoundingClientRect().height : window.innerHeight;
+    const anchorY = viewportTop + Math.min(viewportHeight * 0.35, 260);
+    let bestItem = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    for (const item of items) {
+      const rect = item.getBoundingClientRect();
+      if (rect.bottom <= viewportTop || rect.top >= viewportTop + viewportHeight) continue;
+      if (rect.top <= anchorY && rect.bottom >= anchorY) {
+        bestItem = item;
+        break;
+      }
+      const distance = Math.abs(rect.top - anchorY);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestItem = item;
+      }
+    }
+    if (!bestItem) {
+      dots.forEach((dot) => dot.classList.remove('is-active'));
+      return;
+    }
+    const activeNoteId = String(bestItem.dataset.noteId || '');
+    dots.forEach((dot) => dot.classList.toggle('is-active', String(dot.dataset.noteId || '') === activeNoteId));
   }
 
   async function loadNotes() {
@@ -1032,12 +1114,14 @@
     const willOpen = !notesDrawer?.classList.contains('is-open');
     notesDrawer?.classList.toggle('is-open', willOpen);
     notesDrawerToggle.setAttribute('aria-expanded', String(willOpen));
+    document.body.classList.toggle('notes-drawer-open', willOpen);
     if (willOpen) {
       await loadNotes();
       if (notesFeedScroll) {
         notesFeedScroll.scrollTop = notesFeedScroll.scrollHeight;
       }
       notesDrawerToggle.style.display = 'none';
+      if (notesJournalToggle) notesJournalToggle.style.display = 'none';
     }
   });
 
@@ -1045,11 +1129,15 @@
     notesDrawer?.classList.remove('is-open');
     notesDrawerToggle?.setAttribute('aria-expanded', 'false');
     if (notesDrawerToggle) notesDrawerToggle.style.display = '';
+    if (notesJournalToggle) notesJournalToggle.style.display = '';
+    document.body.classList.remove('notes-drawer-open');
   });
 
   notesOnlyCurrentToggle?.addEventListener('change', loadNotes);
   notesSearchInput?.addEventListener('input', () => applyNotesFilters(notesSearchInput.value, notesDateInput?.value || ''));
   notesDateInput?.addEventListener('change', () => applyNotesFilters(notesSearchInput?.value || '', notesDateInput.value));
+  notesFeedScroll?.addEventListener('scroll', updateActiveNotesRailDot, { passive: true });
+  window.addEventListener('resize', updateActiveNotesRailDot);
   notesFeed?.addEventListener('click', async (event) => {
     const target = event.target;
     const button = target && target.closest ? target.closest('[data-note-delete]') : null;
@@ -1073,6 +1161,7 @@
       submitNoteFromDrawer(Boolean(event.shiftKey));
     }
   });
+  updateActiveNotesRailDot();
 
   function notesExec(cmd, val) {
     notesInput?.focus();

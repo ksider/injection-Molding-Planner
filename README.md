@@ -72,6 +72,24 @@ Planned: export data to CSV.
 - Reports can be signed inside the task popup (manager/engineer/admin).
 - Each task has calendar actions: download .ics or open a Google Calendar link.
 
+## Notes & Lab Journal
+- Notes are available in a bottom drawer on:
+  - Experiment page
+  - Qualification step page
+  - DOE page
+  - Run page
+  - Report page
+- Full note feed is available at `/experiments/:id/journal`.
+- Notes are entity-linked (`experiment`, `qualification_step`, `doe`, `run`, `report`, `task`).
+- Daily mode:
+  - `Ctrl/Cmd + Enter` appends to your current daily note in the same entity context.
+  - `Ctrl/Cmd + Shift + Enter` forces a new note.
+- Filters:
+  - text search
+  - date filter
+  - entity-only toggle (in entity drawers)
+- Soft-delete is enabled for `admin` / `manager`.
+
 ## Qualification (Scientific Molding)
 The qualification flow includes 6 steps based on scientific molding methodology:
 1) Rheology / Viscosity curve  

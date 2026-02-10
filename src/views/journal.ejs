@@ -54,7 +54,7 @@
                   </button>
                 <% } %>
               </div>
-            </div>
+            </header>
             <div class="journal-item-body"><%- note.body_html %></div>
           </article>
         <% }) %>
@@ -72,6 +72,40 @@
   const sendBtn = document.getElementById('journalSend');
   const searchInput = document.getElementById('journalSearch');
   const dateInput = document.getElementById('journalDateFilter');
+  let railTooltipEl = null;
+
+  function ensureRailTooltip() {
+    if (railTooltipEl && document.body.contains(railTooltipEl)) return railTooltipEl;
+    railTooltipEl = document.getElementById('railTooltip');
+    if (!railTooltipEl) {
+      railTooltipEl = document.createElement('div');
+      railTooltipEl.id = 'railTooltip';
+      railTooltipEl.className = 'rail-tooltip';
+      document.body.appendChild(railTooltipEl);
+    }
+    return railTooltipEl;
+  }
+
+  function bindRailTooltip(dot, text) {
+    const tip = ensureRailTooltip();
+    const showAt = (x, y) => {
+      tip.textContent = text;
+      tip.classList.add('is-visible');
+      const rect = tip.getBoundingClientRect();
+      const left = Math.max(8, x - rect.width - 14);
+      const top = Math.min(window.innerHeight - rect.height - 8, Math.max(8, y - rect.height / 2));
+      tip.style.left = `${left}px`;
+      tip.style.top = `${top}px`;
+    };
+    dot.addEventListener('mouseenter', (event) => showAt(event.clientX, event.clientY));
+    dot.addEventListener('mousemove', (event) => showAt(event.clientX, event.clientY));
+    dot.addEventListener('mouseleave', () => tip.classList.remove('is-visible'));
+    dot.addEventListener('focus', () => {
+      const r = dot.getBoundingClientRect();
+      showAt(r.left, r.top + r.height / 2);
+    });
+    dot.addEventListener('blur', () => tip.classList.remove('is-visible'));
+  }
 
   function escapeHtml(value) {
     return String(value || '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
@@ -105,14 +139,53 @@
     notes.forEach((item, index) => {
       const dot = document.createElement('button');
       dot.type = 'button';
+      dot.dataset.noteId = String(item.dataset.noteId || '');
       const entity = item.dataset.entityType || 'experiment';
       dot.className = `journal-rail-dot entity-${entity}`;
-      const stamp = item.querySelector('.journal-item-head .small-note')?.textContent || '';
-      dot.title = stamp;
-      dot.setAttribute('aria-label', stamp || `Note ${index + 1}`);
+      const title = item.querySelector('.journal-item-head strong')?.textContent?.trim() || `Note ${index + 1}`;
+      const stamp = item.querySelector('.journal-item-head .small-note')?.textContent?.trim() || '';
+      const tooltip = stamp ? `${title} · ${stamp}` : title;
+      dot.dataset.tooltip = tooltip;
+      dot.title = tooltip;
+      dot.setAttribute('aria-label', tooltip);
+      bindRailTooltip(dot, tooltip);
       dot.addEventListener('click', () => item.scrollIntoView({ behavior: 'smooth', block: 'start' }));
       rail.appendChild(dot);
     });
+    updateActiveRailDot();
+  }
+
+  function updateActiveRailDot() {
+    if (!rail || !feed) return;
+    const dots = Array.from(rail.querySelectorAll('.journal-rail-dot'));
+    if (!dots.length) return;
+    const items = Array.from(feed.querySelectorAll('.journal-item')).filter((item) => item.style.display !== 'none');
+    if (!items.length) {
+      dots.forEach((dot) => dot.classList.remove('is-active'));
+      return;
+    }
+    const anchorY = window.innerHeight * 0.35;
+    let bestItem = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    for (const item of items) {
+      const rect = item.getBoundingClientRect();
+      if (rect.bottom <= 0 || rect.top >= window.innerHeight) continue;
+      if (rect.top <= anchorY && rect.bottom >= anchorY) {
+        bestItem = item;
+        break;
+      }
+      const distance = Math.abs(rect.top - anchorY);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestItem = item;
+      }
+    }
+    if (!bestItem) {
+      dots.forEach((dot) => dot.classList.remove('is-active'));
+      return;
+    }
+    const activeNoteId = String(bestItem.dataset.noteId || '');
+    dots.forEach((dot) => dot.classList.toggle('is-active', String(dot.dataset.noteId || '') === activeNoteId));
   }
 
   function applyFilters(query, dateValue) {
@@ -130,6 +203,17 @@
     buildRail();
   }
 
+  function sortFeedByActivityDesc() {
+    if (!feed) return;
+    const cards = Array.from(feed.querySelectorAll('.journal-item'));
+    cards.sort((a, b) => {
+      const at = new Date(a.dataset.createdAt || 0).getTime();
+      const bt = new Date(b.dataset.createdAt || 0).getTime();
+      return bt - at;
+    });
+    cards.forEach((card) => feed.appendChild(card));
+  }
+
   function upsertNoteInFeed(note) {
     if (!feed) return;
     feed.querySelectorAll('.notes-empty').forEach((el) => el.remove());
@@ -140,6 +224,7 @@
     } else {
       feed.appendChild(next);
     }
+    sortFeedByActivityDesc();
   }
 
   async function submitNote(forceNew = false) {
@@ -226,7 +311,11 @@
 
   searchInput?.addEventListener('input', () => applyFilters(searchInput.value, dateInput?.value || ''));
   dateInput?.addEventListener('change', () => applyFilters(searchInput?.value || '', dateInput.value));
+  window.addEventListener('scroll', updateActiveRailDot, { passive: true });
+  window.addEventListener('resize', updateActiveRailDot);
 
+  sortFeedByActivityDesc();
   buildRail();
+  updateActiveRailDot();
 </script>
 <%- include('partials/foot') %>
