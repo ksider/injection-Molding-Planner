@@ -178,7 +178,7 @@ export function markdownToSafeHtml(markdown: string): string {
       }
       const checked = checkItem[1].toLowerCase() === "x" ? " checked" : "";
       chunks.push(
-        `<li><label><input type="checkbox" disabled${checked}> <span>${renderInline(checkItem[2])}</span></label></li>`
+        `<li><label><input type="checkbox"${checked}> <span>${renderInline(checkItem[2])}</span></label></li>`
       );
       continue;
     }
