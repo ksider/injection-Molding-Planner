@@ -46,7 +46,22 @@ function toEntityId(raw: unknown, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function toResponseNote(note: NoteRow, role: string) {
+function entityHref(
+  note: { entity_type: NoteEntityType | null; entity_id: number | null },
+  experimentId: number
+): string {
+  const entityType = note.entity_type || "experiment";
+  const entityId = Number(note.entity_id || experimentId);
+  if (entityType === "experiment") return `/experiments/${experimentId}`;
+  if (entityType === "qualification_step") return `/experiments/${experimentId}/qualification/${entityId}`;
+  if (entityType === "doe") return `/does/${entityId}`;
+  if (entityType === "run") return `/runs/${entityId}`;
+  if (entityType === "report") return `/reports/${entityId}`;
+  if (entityType === "task") return `/experiments/${experimentId}#tasks`;
+  return `/experiments/${experimentId}`;
+}
+
+function toResponseNote(note: NoteRow, role: string, db: Db, experimentId: number) {
   const parts = String(note.title || "").split(" · ").map((part) => part.trim()).filter(Boolean);
   const displayTitle = parts.length >= 2 ? `${parts[0]} · ${parts[1]}` : String(note.title || "");
   const activityAt = note.updated_at || note.created_at;
@@ -57,6 +72,15 @@ function toResponseNote(note: NoteRow, role: string) {
     author_label: note.author_name?.trim() || note.author_email?.trim() || "Unknown",
     timestamp: new Date(activityAt).toLocaleString(),
     activity_at: activityAt,
+    entity_label: entityLabel(
+      db,
+      {
+        entity_type: (note.entity_type || "experiment") as NoteEntityType,
+        entity_id: Number(note.entity_id || experimentId)
+      },
+      experimentId
+    ),
+    entity_href: entityHref(note, experimentId),
     can_delete: role === "admin" || role === "manager"
   };
 }
@@ -95,7 +119,7 @@ export function createNotesRouter(db: Db) {
 
     const role = req.user?.role ?? "";
     const notes = listNotesByExperiment(db, experimentId, { limit: 200 })
-      .map((note) => toResponseNote(note, role))
+      .map((note) => toResponseNote(note, role, db, experimentId))
       .sort((a, b) => new Date(a.activity_at).getTime() - new Date(b.activity_at).getTime());
     const canWrite = hasRole(req, NOTE_WRITER_ROLES);
 
@@ -120,7 +144,7 @@ export function createNotesRouter(db: Db) {
       entity_type: onlyCurrent ? entityType : undefined,
       entity_id: onlyCurrent ? entityId : undefined,
       limit: 200
-    }).map((note) => toResponseNote(note, role));
+    }).map((note) => toResponseNote(note, role, db, experimentId));
 
     res.json({ notes });
   });
@@ -180,7 +204,7 @@ export function createNotesRouter(db: Db) {
 
     return res.json({
       ok: true,
-      note: created ? toResponseNote(created, role) : null
+      note: created ? toResponseNote(created, role, db, experimentId) : null
     });
   });
 

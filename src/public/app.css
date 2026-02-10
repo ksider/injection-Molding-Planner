@@ -2763,6 +2763,82 @@ tr[data-mode="list"] .settings-range {
   font-size: 0.86rem;
 }
 
+.journal-feed .notes-drawer-toolbar {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.journal-entity-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.journal-filter-chip {
+  border: 1px solid #d9d9d4;
+  background: #fbfbf9;
+  color: #4f5560;
+  border-radius: 999px;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  cursor: pointer;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.journal-filter-chip.is-active {
+  box-shadow: inset 0 0 0 1px rgba(30, 31, 36, 0.18);
+  font-weight: 700;
+}
+
+.journal-filter-chip.entity-experiment {
+  background: #f7f9fc;
+  border-color: #dbe3ee;
+  color: #4d5a6d;
+}
+
+.journal-filter-chip.entity-qualification_step {
+  background: #f8f5ff;
+  border-color: #e1d8f7;
+  color: #5b4696;
+}
+
+.journal-filter-chip.entity-doe {
+  background: #f1f8ff;
+  border-color: #d8e8f8;
+  color: #2e5f90;
+}
+
+.journal-filter-chip.entity-run {
+  background: #f2faf5;
+  border-color: #d6eadf;
+  color: #2f6d49;
+}
+
+.journal-filter-chip.entity-report {
+  background: #fff8f1;
+  border-color: #f3dfcb;
+  color: #8c4f27;
+}
+
+.journal-filter-chip.entity-task {
+  background: #fff3f3;
+  border-color: #f3d7d7;
+  color: #8b3e3e;
+}
+
+.journal-feed .notes-drawer-toolbar .notes-search {
+  margin-left: 0;
+  flex: 0 0 auto;
+}
+
 .journal-feed {
   display: grid;
   gap: 0.6rem;
@@ -2773,6 +2849,46 @@ tr[data-mode="list"] .settings-range {
   border-radius: 12px;
   padding: 0.7rem 0.8rem;
   background: #fff;
+}
+
+.journal-item-title-link {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.journal-item-title-link:hover {
+  text-decoration: underline;
+}
+
+.journal-item.entity-experiment {
+  background: #f7f9fc;
+  border-color: #dbe3ee;
+}
+
+.journal-item.entity-qualification_step {
+  background: #f8f5ff;
+  border-color: #e1d8f7;
+}
+
+.journal-item.entity-doe {
+  background: #f1f8ff;
+  border-color: #d8e8f8;
+}
+
+.journal-item.entity-run {
+  background: #f2faf5;
+  border-color: #d6eadf;
+}
+
+.journal-item.entity-report {
+  background: #fff8f1;
+  border-color: #f3dfcb;
+}
+
+.journal-item.entity-task {
+  background: #fff3f3;
+  border-color: #f3d7d7;
 }
 
 .journal-item-head {

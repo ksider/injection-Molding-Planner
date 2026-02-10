@@ -36,6 +36,7 @@
       <aside class="journal-rail" id="journalRail"></aside>
       <section class="journal-feed" id="journalFeed">
         <div class="notes-drawer-toolbar" style="padding:0 0 0.5rem 0; border-bottom:0;">
+          <div class="journal-entity-filters" id="journalEntityFilters"></div>
           <input class="notes-search" type="date" id="journalDateFilter" title="Filter by date">
           <input class="notes-search" type="search" id="journalSearch" placeholder="Search notes">
         </div>
@@ -43,9 +44,10 @@
           <div class="small-note notes-empty" id="journalEmpty">No notes yet.</div>
         <% } %>
         <% (notes || []).forEach((note) => { %>
-          <article class="journal-item" data-note-id="<%= note.id %>" data-entity-type="<%= note.entity_type || 'experiment' %>" data-created-at="<%= note.activity_at || note.updated_at || note.created_at %>">
+          <% const noteEntityType = note.entity_type || 'experiment'; %>
+          <article class="journal-item entity-<%= noteEntityType %>" data-note-id="<%= note.id %>" data-entity-type="<%= noteEntityType %>" data-created-at="<%= note.activity_at || note.updated_at || note.created_at %>" data-entity-label="<%= note.entity_label || '' %>" data-entity-href="<%= note.entity_href || `/experiments/${experiment.id}` %>">
             <header class="journal-item-head">
-              <strong><%- formatInline(note.display_title || note.title) %></strong>
+              <a class="journal-item-title-link" href="<%= note.entity_href || `/experiments/${experiment.id}` %>"><%- formatInline(note.display_title || note.title) %></a>
               <div class="journal-item-head-actions">
                 <span class="small-note"><%= note.timestamp %></span>
                 <% if (note.can_delete) { %>
@@ -72,9 +74,19 @@
   const sendBtn = document.getElementById('journalSend');
   const searchInput = document.getElementById('journalSearch');
   const dateInput = document.getElementById('journalDateFilter');
+  const entityFilters = document.getElementById('journalEntityFilters');
   let railTooltipEl = null;
   let mathRenderer = null;
   let mathRendererLoader = null;
+  let selectedEntityTypes = new Set();
+  const ENTITY_TYPE_LABELS = {
+    experiment: 'Experiment',
+    qualification_step: 'Qualification',
+    doe: 'DOE',
+    run: 'Run',
+    report: 'Report',
+    task: 'Task'
+  };
 
   function ensureKatexCss() {
     if (document.getElementById('katex-css')) return;
@@ -155,13 +167,15 @@
   function renderNote(note) {
     const entity = String(note.entity_type || 'experiment');
     const article = document.createElement('article');
-    article.className = 'journal-item';
+    article.className = `journal-item entity-${entity}`;
     article.dataset.noteId = String(note.id);
     article.dataset.entityType = entity;
     article.dataset.createdAt = String(note.activity_at || note.updated_at || note.created_at || '');
+    article.dataset.entityLabel = String(note.entity_label || '');
+    article.dataset.entityHref = String(note.entity_href || `/experiments/${experimentId}`);
     article.innerHTML = `
       <header class="journal-item-head">
-        <strong>${escapeHtml(note.display_title || note.title)}</strong>
+        <a class="journal-item-title-link" href="${escapeHtml(note.entity_href || `/experiments/${experimentId}`)}">${escapeHtml(note.display_title || note.title)}</a>
         <div class="journal-item-head-actions">
           <span class="small-note">${escapeHtml(note.timestamp)}</span>
           ${note.can_delete ? '<button class="icon-button danger tiny" type="button" data-note-delete title="Delete note"><span class="material-symbols-rounded" aria-hidden="true">delete</span></button>' : ''}
@@ -174,6 +188,65 @@
     return article;
   }
 
+  function normalizeEntitySelection() {
+    if (!feed) return;
+    const available = new Set(
+      Array.from(feed.querySelectorAll('.journal-item'))
+        .map((item) => String(item.dataset.entityType || 'experiment'))
+    );
+    if (!available.size) {
+      selectedEntityTypes = new Set();
+      return;
+    }
+    if (!selectedEntityTypes.size) {
+      selectedEntityTypes = new Set(available);
+      return;
+    }
+    selectedEntityTypes = new Set(Array.from(selectedEntityTypes).filter((type) => available.has(type)));
+    if (!selectedEntityTypes.size) {
+      selectedEntityTypes = new Set(available);
+    }
+  }
+
+  function buildEntityFilters() {
+    if (!entityFilters || !feed) return;
+    normalizeEntitySelection();
+    const entries = new Map();
+    feed.querySelectorAll('.journal-item').forEach((item) => {
+      const type = String(item.dataset.entityType || 'experiment');
+      if (entries.has(type)) return;
+      entries.set(type, ENTITY_TYPE_LABELS[type] || type);
+    });
+    entityFilters.innerHTML = '';
+    const allBtn = document.createElement('button');
+    allBtn.type = 'button';
+    allBtn.className = `journal-filter-chip${selectedEntityTypes.size === entries.size ? ' is-active' : ''}`;
+    allBtn.textContent = 'All';
+    allBtn.addEventListener('click', () => {
+      selectedEntityTypes = new Set(entries.keys());
+      applyFilters(searchInput?.value || '', dateInput?.value || '');
+      buildEntityFilters();
+    });
+    entityFilters.appendChild(allBtn);
+    entries.forEach((label, type) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `journal-filter-chip entity-${type}${selectedEntityTypes.has(type) ? ' is-active' : ''}`;
+      button.textContent = label;
+      button.title = `Toggle ${label}`;
+      button.addEventListener('click', () => {
+        if (selectedEntityTypes.has(type) && selectedEntityTypes.size > 1) {
+          selectedEntityTypes.delete(type);
+        } else if (!selectedEntityTypes.has(type)) {
+          selectedEntityTypes.add(type);
+        }
+        applyFilters(searchInput?.value || '', dateInput?.value || '');
+        buildEntityFilters();
+      });
+      entityFilters.appendChild(button);
+    });
+  }
+
   function buildRail() {
     if (!rail || !feed) return;
     rail.innerHTML = '';
@@ -184,7 +257,7 @@
       dot.dataset.noteId = String(item.dataset.noteId || '');
       const entity = item.dataset.entityType || 'experiment';
       dot.className = `journal-rail-dot entity-${entity}`;
-      const title = item.querySelector('.journal-item-head strong')?.textContent?.trim() || `Note ${index + 1}`;
+      const title = item.querySelector('.journal-item-title-link')?.textContent?.trim() || `Note ${index + 1}`;
       const stamp = item.querySelector('.journal-item-head .small-note')?.textContent?.trim() || '';
       const tooltip = stamp ? `${title} · ${stamp}` : title;
       dot.dataset.tooltip = tooltip;
@@ -237,10 +310,12 @@
     feed.querySelectorAll('.journal-item').forEach((item) => {
       const text = item.textContent?.toLowerCase() || '';
       const createdAt = item.dataset.createdAt || '';
+      const entityType = String(item.dataset.entityType || 'experiment');
       const itemDate = createdAt ? new Date(createdAt).toISOString().slice(0, 10) : '';
       const byText = !q || text.includes(q);
       const byDate = !date || date === itemDate;
-      item.style.display = byText && byDate ? '' : 'none';
+      const byEntity = selectedEntityTypes.has(entityType);
+      item.style.display = byText && byDate && byEntity ? '' : 'none';
     });
     buildRail();
   }
@@ -267,6 +342,7 @@
       feed.appendChild(next);
     }
     sortFeedByActivityDesc();
+    buildEntityFilters();
   }
 
   async function submitNote(forceNew = false) {
@@ -348,6 +424,7 @@
     if (!feed.querySelector('.journal-item')) {
       feed.innerHTML = '<div class="small-note notes-empty" id="journalEmpty">No notes yet.</div>';
     }
+    buildEntityFilters();
     applyFilters(searchInput?.value || '', dateInput?.value || '');
   });
 
@@ -357,6 +434,7 @@
   window.addEventListener('resize', updateActiveRailDot);
 
   sortFeedByActivityDesc();
+  buildEntityFilters();
   feed?.querySelectorAll('.journal-item-body').forEach((el) => renderMathInElement(el));
   buildRail();
   updateActiveRailDot();
