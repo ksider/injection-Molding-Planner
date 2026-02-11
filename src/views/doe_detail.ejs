@@ -657,7 +657,7 @@
           <% } %>
           <% runRows.forEach((run) => { %>
             <tr class="<%= run.done ? 'run-done' : '' %> <%= run.exclude_from_analysis ? 'run-excluded' : '' %>">
-              <td><a href="/runs/<%= run.id %>"><%= run.run_code %></a></td>
+              <td><a href="/experiments/<%= experiment.id %>/runs/<%= run.id %>"><%= run.run_code %></a></td>
               <td><%- run.recipe_id ? formatInline(recipeMap.get(run.recipe_id)) : '-' %></td>
               <td><%= run.done ? 'Yes' : 'No' %></td>
               <td><%= run.exclude_from_analysis ? 'Yes' : 'No' %></td>

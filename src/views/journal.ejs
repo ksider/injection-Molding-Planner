@@ -27,6 +27,7 @@
         <div id="journalBody" class="journal-editor" contenteditable="true" data-placeholder="Write note for this experiment..."></div>
         <div class="journal-compose-footer">
           <span class="small-note">Ctrl/Cmd+Enter: append today · Ctrl/Cmd+Shift+Enter: new note</span>
+          <button class="pure-button" id="journalCancelEdit" type="button" style="display:none;">Cancel edit</button>
           <button class="pure-button pure-button-primary" id="journalSend" type="button">Add note</button>
         </div>
       </div>
@@ -50,6 +51,11 @@
               <a class="journal-item-title-link" href="<%= note.entity_href || `/experiments/${experiment.id}` %>"><%- formatInline(note.display_title || note.title) %></a>
               <div class="journal-item-head-actions">
                 <span class="small-note"><%= note.timestamp %></span>
+                <% if (note.can_edit) { %>
+                  <button class="icon-button tiny" type="button" data-note-edit title="Edit note">
+                    <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+                  </button>
+                <% } %>
                 <% if (note.can_delete) { %>
                   <button class="icon-button danger tiny" type="button" data-note-delete title="Delete note">
                     <span class="material-symbols-rounded" aria-hidden="true">delete</span>
@@ -75,10 +81,12 @@
   const searchInput = document.getElementById('journalSearch');
   const dateInput = document.getElementById('journalDateFilter');
   const entityFilters = document.getElementById('journalEntityFilters');
+  const cancelEditBtn = document.getElementById('journalCancelEdit');
   let railTooltipEl = null;
   let mathRenderer = null;
   let mathRendererLoader = null;
   let selectedEntityTypes = new Set();
+  let editingNoteId = null;
   const ENTITY_TYPE_LABELS = {
     experiment: 'Experiment',
     qualification_step: 'Qualification',
@@ -178,6 +186,7 @@
         <a class="journal-item-title-link" href="${escapeHtml(note.entity_href || `/experiments/${experimentId}`)}">${escapeHtml(note.display_title || note.title)}</a>
         <div class="journal-item-head-actions">
           <span class="small-note">${escapeHtml(note.timestamp)}</span>
+          ${note.can_edit ? '<button class="icon-button tiny" type="button" data-note-edit title="Edit note"><span class="material-symbols-rounded" aria-hidden="true">edit</span></button>' : ''}
           ${note.can_delete ? '<button class="icon-button danger tiny" type="button" data-note-delete title="Delete note"><span class="material-symbols-rounded" aria-hidden="true">delete</span></button>' : ''}
         </div>
       </header>
@@ -355,8 +364,12 @@
     payload.set('entity_type', 'experiment');
     payload.set('entity_id', String(experimentId));
     if (forceNew) payload.set('force_new', '1');
+    const isEdit = Boolean(editingNoteId);
+    const url = isEdit
+      ? `/experiments/${experimentId}/notes/${editingNoteId}/update`
+      : `/experiments/${experimentId}/notes`;
     try {
-      const resp = await fetch(`/experiments/${experimentId}/notes`, {
+      const resp = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: payload
@@ -366,6 +379,9 @@
       upsertNoteInFeed(data.note);
       if (empty) empty.remove();
       bodyInput.innerHTML = '';
+      editingNoteId = null;
+      if (sendBtn) sendBtn.textContent = 'Add note';
+      if (cancelEditBtn) cancelEditBtn.style.display = 'none';
       applyFilters(searchInput?.value || '', dateInput?.value || '');
       buildRail();
     } finally {
@@ -374,6 +390,12 @@
   }
 
   sendBtn?.addEventListener('click', submitNote);
+  cancelEditBtn?.addEventListener('click', () => {
+    editingNoteId = null;
+    if (bodyInput) bodyInput.innerHTML = '';
+    if (sendBtn) sendBtn.textContent = 'Add note';
+    if (cancelEditBtn) cancelEditBtn.style.display = 'none';
+  });
   bodyInput?.addEventListener('keydown', (event) => {
     if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
       event.preventDefault();
@@ -412,6 +434,20 @@
   });
   feed?.addEventListener('click', async (event) => {
     const target = event.target;
+    const editButton = target && target.closest ? target.closest('[data-note-edit]') : null;
+    if (editButton) {
+      const card = editButton.closest('.journal-item');
+      const noteId = card?.dataset?.noteId;
+      if (!noteId || !bodyInput) return;
+      const body = card.querySelector('.journal-item-body');
+      bodyInput.innerHTML = body?.innerHTML || '';
+      editingNoteId = noteId;
+      if (sendBtn) sendBtn.textContent = 'Update note';
+      if (cancelEditBtn) cancelEditBtn.style.display = '';
+      bodyInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      bodyInput.focus();
+      return;
+    }
     const button = target && target.closest ? target.closest('[data-note-delete]') : null;
     if (!button) return;
     const card = button.closest('.journal-item');
@@ -425,6 +461,32 @@
       feed.innerHTML = '<div class="small-note notes-empty" id="journalEmpty">No notes yet.</div>';
     }
     buildEntityFilters();
+    applyFilters(searchInput?.value || '', dateInput?.value || '');
+  });
+  feed?.addEventListener('change', async (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || target.type !== 'checkbox') return;
+    const card = target.closest('.journal-item');
+    if (!card) return;
+    const noteId = card.dataset.noteId;
+    if (!noteId) return;
+    const items = Array.from(card.querySelectorAll('.md-checklist input[type="checkbox"]'));
+    const itemIndex = items.indexOf(target);
+    if (itemIndex < 0) return;
+    const payload = new URLSearchParams();
+    payload.set('item_index', String(itemIndex));
+    payload.set('checked', target.checked ? '1' : '0');
+    const resp = await fetch(`/experiments/${experimentId}/notes/${noteId}/checklist`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: payload
+    });
+    const data = await resp.json().catch(() => null);
+    if (!resp.ok || !data?.note) {
+      target.checked = !target.checked;
+      return;
+    }
+    upsertNoteInFeed(data.note);
     applyFilters(searchInput?.value || '', dateInput?.value || '');
   });
 

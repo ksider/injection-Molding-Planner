@@ -13,6 +13,8 @@ import {
   getNoteById,
   listNotesByExperiment,
   softDeleteNote,
+  toggleChecklistItem,
+  updateNoteBody,
   type NoteEntityType,
   type NoteRow
 } from "../repos/notes_repo.js";
@@ -30,6 +32,13 @@ const VALID_ENTITY_TYPES: NoteEntityType[] = [
 
 function hasRole(req: express.Request, roles: string[]) {
   return roles.includes(req.user?.role ?? "");
+}
+
+function canEditNote(req: express.Request, note: NoteRow): boolean {
+  const role = req.user?.role ?? "";
+  if (role === "admin" || role === "manager") return true;
+  if (!NOTE_WRITER_ROLES.includes(role)) return false;
+  return Boolean(req.user?.id) && note.author_id === req.user?.id;
 }
 
 function cleanBody(raw: unknown): string {
@@ -54,17 +63,27 @@ function entityHref(
   const entityId = Number(note.entity_id || experimentId);
   if (entityType === "experiment") return `/experiments/${experimentId}`;
   if (entityType === "qualification_step") return `/experiments/${experimentId}/qualification/${entityId}`;
-  if (entityType === "doe") return `/does/${entityId}`;
-  if (entityType === "run") return `/runs/${entityId}`;
+  if (entityType === "doe") return `/experiments/${experimentId}/doe/${entityId}`;
+  if (entityType === "run") return `/experiments/${experimentId}/runs/${entityId}`;
   if (entityType === "report") return `/reports/${entityId}`;
   if (entityType === "task") return `/experiments/${experimentId}#tasks`;
   return `/experiments/${experimentId}`;
 }
 
-function toResponseNote(note: NoteRow, role: string, db: Db, experimentId: number) {
+function toResponseNote(
+  note: NoteRow,
+  user: { id?: number | null; role?: string | null } | null,
+  db: Db,
+  experimentId: number
+) {
+  const role = user?.role ?? "";
   const parts = String(note.title || "").split(" · ").map((part) => part.trim()).filter(Boolean);
   const displayTitle = parts.length >= 2 ? `${parts[0]} · ${parts[1]}` : String(note.title || "");
   const activityAt = note.updated_at || note.created_at;
+  const canEdit =
+    role === "admin" ||
+    role === "manager" ||
+    (role === "engineer" && Boolean(user?.id) && note.author_id === user?.id);
   return {
     ...note,
     display_title: displayTitle,
@@ -81,6 +100,7 @@ function toResponseNote(note: NoteRow, role: string, db: Db, experimentId: numbe
       experimentId
     ),
     entity_href: entityHref(note, experimentId),
+    can_edit: canEdit,
     can_delete: role === "admin" || role === "manager"
   };
 }
@@ -117,9 +137,8 @@ export function createNotesRouter(db: Db) {
     const experiment = getExperiment(db, experimentId);
     if (!experiment) return res.status(404).send("Experiment not found");
 
-    const role = req.user?.role ?? "";
     const notes = listNotesByExperiment(db, experimentId, { limit: 200 })
-      .map((note) => toResponseNote(note, role, db, experimentId))
+      .map((note) => toResponseNote(note, req.user ?? null, db, experimentId))
       .sort((a, b) => new Date(a.activity_at).getTime() - new Date(b.activity_at).getTime());
     const canWrite = hasRole(req, NOTE_WRITER_ROLES);
 
@@ -139,12 +158,11 @@ export function createNotesRouter(db: Db) {
       : undefined;
     const onlyCurrent = String(req.query.only_current || "0") === "1";
 
-    const role = req.user?.role ?? "";
     const notes = listNotesByExperiment(db, experimentId, {
       entity_type: onlyCurrent ? entityType : undefined,
       entity_id: onlyCurrent ? entityId : undefined,
       limit: 200
-    }).map((note) => toResponseNote(note, role, db, experimentId));
+    }).map((note) => toResponseNote(note, req.user ?? null, db, experimentId));
 
     res.json({ notes });
   });
@@ -182,7 +200,7 @@ export function createNotesRouter(db: Db) {
         day_iso: today
       });
       if (existing) {
-        appendToNote(db, existing.id, bodyMd);
+        appendToNote(db, existing.id, bodyMd, req.user?.id ?? null);
         noteId = existing.id;
       }
     }
@@ -200,11 +218,9 @@ export function createNotesRouter(db: Db) {
     }
 
     const created = getNoteById(db, noteId);
-    const role = req.user?.role ?? "";
-
     return res.json({
       ok: true,
-      note: created ? toResponseNote(created, role, db, experimentId) : null
+      note: created ? toResponseNote(created, req.user ?? null, db, experimentId) : null
     });
   });
 
@@ -223,6 +239,72 @@ export function createNotesRouter(db: Db) {
     }
     softDeleteNote(db, noteId);
     return res.json({ ok: true });
+  });
+
+  router.post("/experiments/:id/notes/:noteId/update", (req, res) => {
+    const experimentId = Number(req.params.id);
+    const noteId = Number(req.params.noteId);
+    if (!Number.isFinite(noteId)) {
+      return res.status(400).json({ ok: false, message: "Invalid note" });
+    }
+    const note = getNoteById(db, noteId);
+    if (!note || note.experiment_id !== experimentId) {
+      return res.status(404).json({ ok: false, message: "Note not found" });
+    }
+    if (!canEditNote(req, note)) {
+      return res.status(403).json({ ok: false, message: "Forbidden" });
+    }
+    const bodyHtml = String(req.body?.body_html ?? "").trim();
+    const bodyMdRaw = cleanBody(req.body?.body_md);
+    const bodyMd = bodyMdRaw || (bodyHtml ? htmlToMarkdown(bodyHtml) : "");
+    if (!bodyMd) {
+      return res.status(400).json({ ok: false, message: "Note text is required" });
+    }
+    updateNoteBody(db, {
+      note_id: noteId,
+      body_md: bodyMd,
+      edited_by_user_id: req.user?.id ?? null,
+      edit_kind: "manual"
+    });
+    const updated = getNoteById(db, noteId);
+    return res.json({
+      ok: true,
+      note: updated ? toResponseNote(updated, req.user ?? null, db, experimentId) : null
+    });
+  });
+
+  router.post("/experiments/:id/notes/:noteId/checklist", (req, res) => {
+    const experimentId = Number(req.params.id);
+    const noteId = Number(req.params.noteId);
+    if (!Number.isFinite(noteId)) {
+      return res.status(400).json({ ok: false, message: "Invalid note" });
+    }
+    const note = getNoteById(db, noteId);
+    if (!note || note.experiment_id !== experimentId) {
+      return res.status(404).json({ ok: false, message: "Note not found" });
+    }
+    if (!canEditNote(req, note)) {
+      return res.status(403).json({ ok: false, message: "Forbidden" });
+    }
+    const itemIndex = Number(req.body?.item_index);
+    if (!Number.isInteger(itemIndex) || itemIndex < 0) {
+      return res.status(400).json({ ok: false, message: "Invalid checklist item" });
+    }
+    const checked = String(req.body?.checked || "0") === "1";
+    const ok = toggleChecklistItem(db, {
+      note_id: noteId,
+      item_index: itemIndex,
+      checked,
+      edited_by_user_id: req.user?.id ?? null
+    });
+    if (!ok) {
+      return res.status(400).json({ ok: false, message: "Checklist item not found" });
+    }
+    const updated = getNoteById(db, noteId);
+    return res.json({
+      ok: true,
+      note: updated ? toResponseNote(updated, req.user ?? null, db, experimentId) : null
+    });
   });
 
   return router;

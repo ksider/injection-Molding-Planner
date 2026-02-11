@@ -24,6 +24,21 @@ export type NoteRow = {
   author_email: string | null;
 };
 
+function snapshotNoteVersion(
+  db: Db,
+  noteId: number,
+  bodyMd: string,
+  editedByUserId: number | null,
+  editKind: "manual" | "append" | "checklist" | "system"
+) {
+  db.prepare(
+    `
+    INSERT INTO note_versions (note_id, body_md, edited_by_user_id, edit_kind, created_at)
+    VALUES (?, ?, ?, ?, ?)
+    `
+  ).run(noteId, bodyMd, editedByUserId, editKind, new Date().toISOString());
+}
+
 export function listNotesByExperiment(
   db: Db,
   experimentId: number,
@@ -205,13 +220,14 @@ export function findLatestNoteForDay(
   return row ?? null;
 }
 
-export function appendToNote(db: Db, noteId: number, bodyMd: string): void {
+export function appendToNote(db: Db, noteId: number, bodyMd: string, editedByUserId: number | null = null): void {
   const existing = db
     .prepare("SELECT body_md FROM notes WHERE id = ? LIMIT 1")
     .get(noteId) as { body_md: string } | undefined;
   if (!existing) return;
   const now = new Date().toISOString();
   const prefix = existing.body_md?.trim() ? "\n\n" : "";
+  snapshotNoteVersion(db, noteId, existing.body_md || "", editedByUserId, "append");
   db.prepare(
     `
     UPDATE notes
@@ -219,4 +235,70 @@ export function appendToNote(db: Db, noteId: number, bodyMd: string): void {
     WHERE id = ?
     `
   ).run(`${existing.body_md || ""}${prefix}${bodyMd}`, now, noteId);
+}
+
+export function updateNoteBody(
+  db: Db,
+  data: {
+    note_id: number;
+    body_md: string;
+    edited_by_user_id: number | null;
+    edit_kind?: "manual" | "append" | "checklist" | "system";
+  }
+): void {
+  const existing = db
+    .prepare("SELECT body_md FROM notes WHERE id = ? LIMIT 1")
+    .get(data.note_id) as { body_md: string } | undefined;
+  if (!existing) return;
+  const nextBody = String(data.body_md || "");
+  if (nextBody === String(existing.body_md || "")) return;
+  snapshotNoteVersion(
+    db,
+    data.note_id,
+    String(existing.body_md || ""),
+    data.edited_by_user_id ?? null,
+    data.edit_kind ?? "manual"
+  );
+  db.prepare(
+    `
+    UPDATE notes
+    SET body_md = ?, updated_at = ?
+    WHERE id = ?
+    `
+  ).run(nextBody, new Date().toISOString(), data.note_id);
+}
+
+export function toggleChecklistItem(
+  db: Db,
+  data: {
+    note_id: number;
+    item_index: number;
+    checked: boolean;
+    edited_by_user_id: number | null;
+  }
+): boolean {
+  const existing = db
+    .prepare("SELECT body_md FROM notes WHERE id = ? LIMIT 1")
+    .get(data.note_id) as { body_md: string } | undefined;
+  if (!existing) return false;
+  const lines = String(existing.body_md || "").replace(/\r\n/g, "\n").split("\n");
+  let currentIndex = -1;
+  let updated = false;
+  const nextLines = lines.map((line) => {
+    const match = line.match(/^(\s*-\s)\[( |x|X)\](\s+.*)$/);
+    if (!match) return line;
+    currentIndex += 1;
+    if (currentIndex !== data.item_index) return line;
+    updated = true;
+    const marker = data.checked ? "x" : " ";
+    return `${match[1]}[${marker}]${match[3]}`;
+  });
+  if (!updated) return false;
+  updateNoteBody(db, {
+    note_id: data.note_id,
+    body_md: nextLines.join("\n"),
+    edited_by_user_id: data.edited_by_user_id,
+    edit_kind: "checklist"
+  });
+  return true;
 }

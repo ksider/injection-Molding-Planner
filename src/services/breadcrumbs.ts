@@ -94,7 +94,7 @@ export function buildBreadcrumbs(db: Db, req: Request): Breadcrumb[] {
         const doeLabel = doe?.name ?? `DOE ${run.doe_id}`;
         push(doeLabel, `/experiments/${run.experiment_id}/doe/${run.doe_id}`);
       }
-      push(run.run_code || `Run ${run.id}`, `/runs/${run.id}`);
+      push(run.run_code || `Run ${run.id}`, `/experiments/${run.experiment_id}/runs/${run.id}`);
     }
     return crumbs;
   }
@@ -132,6 +132,23 @@ export function buildBreadcrumbs(db: Db, req: Request): Breadcrumb[] {
         if (tab === "design") push("Design", req.originalUrl);
         if (tab === "runs") push("Runs", req.originalUrl);
         if (tab === "analysis") push("Analysis", req.originalUrl);
+      }
+      return crumbs;
+    }
+    if (second === "runs") {
+      const runId = Number(segments[3]);
+      if (Number.isFinite(runId)) {
+        const run = getRun(db, runId);
+        if (run) {
+          if (run.doe_id) {
+            const doe = getDoeStudy(db, run.doe_id);
+            const doeLabel = doe?.name ?? `DOE ${run.doe_id}`;
+            push(doeLabel, `/experiments/${experimentId}/doe/${run.doe_id}`);
+          }
+          push(run.run_code || `Run ${run.id}`, `/experiments/${experimentId}/runs/${run.id}`);
+        } else {
+          push(`Run ${runId}`, `/experiments/${experimentId}/runs/${runId}`);
+        }
       }
       return crumbs;
     }

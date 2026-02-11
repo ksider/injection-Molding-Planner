@@ -133,6 +133,16 @@ function initDb(db: Db) {
       created_at TEXT NOT NULL,
       FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
     );
+    CREATE TABLE IF NOT EXISTS note_versions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      note_id INTEGER NOT NULL,
+      body_md TEXT NOT NULL,
+      edited_by_user_id INTEGER,
+      edit_kind TEXT NOT NULL DEFAULT 'manual', -- manual | append | checklist | system
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE,
+      FOREIGN KEY (edited_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
     CREATE TABLE IF NOT EXISTS recipes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -380,6 +390,7 @@ function initDb(db: Db) {
     CREATE INDEX IF NOT EXISTS idx_tasks_experiment_id ON tasks(experiment_id);
     CREATE INDEX IF NOT EXISTS idx_task_entities_task_id ON task_entities(task_id);
     CREATE INDEX IF NOT EXISTS idx_task_assignments_task_id ON task_assignments(task_id);
+    CREATE INDEX IF NOT EXISTS idx_note_versions_note_id ON note_versions(note_id);
   `);
 
   const adminSettingsCount = db

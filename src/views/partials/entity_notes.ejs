@@ -198,6 +198,7 @@
     let mathRendererLoader = null;
     let pickerRows = 3;
     let pickerCols = 3;
+    let editingNoteId = null;
 
     const ensureRailTooltip = () => {
       if (railTooltipEl && document.body.contains(railTooltipEl)) return railTooltipEl;
@@ -532,11 +533,13 @@
       article.dataset.noteId = String(note.id || '');
       article.dataset.entityType = entity;
       article.dataset.createdAt = String(note.activity_at || note.updated_at || note.created_at || '');
+      article.dataset.entityHref = String(note.entity_href || `/experiments/${experimentId}`);
       article.innerHTML = `
         <header class="journal-item-head">
-          <strong>${esc(note.display_title || note.title || '')}</strong>
+          <a class="journal-item-title-link" href="${esc(note.entity_href || `/experiments/${experimentId}`)}">${esc(note.display_title || note.title || '')}</a>
           <div class="journal-item-head-actions">
             <span class="small-note">${esc(note.timestamp || '')}</span>
+            ${note.can_edit ? '<button class="icon-button tiny" type="button" data-note-edit title="Edit note"><span class="material-symbols-rounded" aria-hidden="true">edit</span></button>' : ''}
             ${note.can_delete ? '<button class="icon-button danger tiny" type="button" data-note-delete title="Delete note"><span class="material-symbols-rounded" aria-hidden="true">delete</span></button>' : ''}
           </div>
         </header>
@@ -559,7 +562,7 @@
         dot.type = 'button';
         dot.dataset.noteId = String(item.dataset.noteId || '');
         dot.className = `journal-rail-dot entity-${entity}`;
-        const title = item.querySelector('.journal-item-head strong')?.textContent?.trim() || `Note ${index + 1}`;
+        const title = item.querySelector('.journal-item-title-link')?.textContent?.trim() || `Note ${index + 1}`;
         const stamp = item.querySelector('.journal-item-head .small-note')?.textContent?.trim() || '';
         const tooltip = stamp ? `${title} · ${stamp}` : title;
         dot.dataset.tooltip = tooltip;
@@ -681,8 +684,12 @@
       payload.set('entity_id', String(entityId));
       payload.set('body_html', bodyHtml);
       if (forceNew) payload.set('force_new', '1');
+      const isEdit = Boolean(editingNoteId);
+      const url = isEdit
+        ? `/experiments/${experimentId}/notes/${editingNoteId}/update`
+        : `/experiments/${experimentId}/notes`;
       try {
-        const resp = await fetch(`/experiments/${experimentId}/notes`, {
+        const resp = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: payload
@@ -691,6 +698,8 @@
         if (!resp.ok || !data?.note) return;
         upsertNote(data.note);
         editor.commands.clearContent(true);
+        editingNoteId = null;
+        if (sendBtn) sendBtn.textContent = 'Add note';
         applyFilters(searchInput?.value || '', dateInput?.value || '');
         rebuildRail();
         if (feedScroll) {
@@ -731,6 +740,20 @@
     });
     feed?.addEventListener('click', async (event) => {
       const target = event.target;
+      const editButton = target && target.closest ? target.closest('[data-note-edit]') : null;
+      if (editButton) {
+        const card = editButton.closest('.journal-item');
+        const noteId = card?.dataset?.noteId;
+        if (!noteId) return;
+        const editor = await ensureNotesEditor();
+        if (!editor) return;
+        const body = card.querySelector('.journal-item-body');
+        editor.commands.setContent(body?.innerHTML || '<p></p>', { emitUpdate: true });
+        editingNoteId = noteId;
+        if (sendBtn) sendBtn.textContent = 'Update note';
+        editor.commands.focus('end');
+        return;
+      }
       const button = target && target.closest ? target.closest('[data-note-delete]') : null;
       if (!button) return;
       const card = button.closest('.journal-item');
@@ -744,6 +767,31 @@
         feed.innerHTML = '<div class="small-note notes-empty">No notes yet.</div>';
       }
       rebuildRail();
+    });
+    feed?.addEventListener('change', async (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement) || target.type !== 'checkbox') return;
+      const card = target.closest('.journal-item');
+      if (!card) return;
+      const noteId = card.dataset.noteId;
+      if (!noteId) return;
+      const items = Array.from(card.querySelectorAll('.md-checklist input[type="checkbox"]'));
+      const itemIndex = items.indexOf(target);
+      if (itemIndex < 0) return;
+      const payload = new URLSearchParams();
+      payload.set('item_index', String(itemIndex));
+      payload.set('checked', target.checked ? '1' : '0');
+      const resp = await fetch(`/experiments/${experimentId}/notes/${noteId}/checklist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: payload
+      });
+      const data = await resp.json().catch(() => null);
+      if (!resp.ok || !data?.note) {
+        target.checked = !target.checked;
+        return;
+      }
+      await loadNotes();
     });
 
     onlyCurrent?.addEventListener('change', loadNotes);
