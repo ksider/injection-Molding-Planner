@@ -6,7 +6,7 @@ import {
   createCustomParam,
   generateRuns
 } from "../services/experiments_service.js";
-import { ensureQualificationDefaults } from "../services/qualification_service.js";
+import { ensureQualificationDefaults, getQualificationSteps } from "../services/qualification_service.js";
 import { listRecipes, getRecipeComponents } from "../repos/recipes_repo.js";
 import { listMachines } from "../repos/machines_repo.js";
 import {
@@ -26,6 +26,7 @@ import {
   updateDoeStudyName
 } from "../repos/doe_repo.js";
 import { listQualSummaries } from "../repos/qual_repo.js";
+import { listQualSteps } from "../repos/qual_repo.js";
 import { createReportConfig, listReportConfigs, updateReportConfig, getReportConfig } from "../repos/reports_repo.js";
 import {
   listParamDefinitions,
@@ -66,6 +67,16 @@ import { listUsers, findUserById } from "../repos/users_repo.js";
 // Local helper for role checks in this router.
 function hasRole(req: express.Request, roles: string[]) {
   return roles.includes(req.user?.role ?? "");
+}
+
+function formatSummaryNumber(value: number): string {
+  if (!Number.isFinite(value)) return "-";
+  const abs = Math.abs(value);
+  if (abs >= 1000) {
+    return value.toLocaleString("en-US", { maximumFractionDigits: 1 });
+  }
+  const rounded = Math.round(value * 1000) / 1000;
+  return String(rounded);
 }
 
 export function createExperimentsRouter(db: Db) {
@@ -112,6 +123,62 @@ export function createExperimentsRouter(db: Db) {
     const experiment = getExperiment(db, experimentId);
     if (!experiment) return res.status(404).send("Experiment not found");
     const qualSummaries = listQualSummaries(db, experimentId);
+    const qualSteps = listQualSteps(db, experimentId);
+    const stepStatusByNumber = new Map(qualSteps.map((step) => [step.step_number, step.status]));
+    const summaryByStep = new Map(qualSummaries.map((summary) => [summary.step_number, summary.summary_json]));
+    const qualificationCards = getQualificationSteps().map((stepDef) => {
+      const stepNumber = stepDef.step_number;
+      const summaryJson = summaryByStep.get(stepNumber) || null;
+      let summaryData: Record<string, unknown> | null = null;
+      if (summaryJson) {
+        try {
+          summaryData = JSON.parse(summaryJson) as Record<string, unknown>;
+        } catch {
+          summaryData = null;
+        }
+      }
+      const rawStatus = stepStatusByNumber.get(stepNumber) || "DRAFT";
+      const status =
+        summaryJson || rawStatus === "DONE"
+          ? "done"
+          : rawStatus === "RUNNING"
+            ? "in_progress"
+            : "not_started";
+      const statusLabel =
+        status === "done" ? "Done" : status === "in_progress" ? "In progress" : "Not started";
+      const summaryItems: Array<{ label: string; value: string }> = [];
+      if (summaryData) {
+        if (stepNumber === 4) {
+          const centerTemp = summaryData.window_center_temp;
+          const centerPressure = summaryData.window_center_pressure;
+          summaryItems.push({
+            label: "center temp",
+            value: typeof centerTemp === "number" ? `${formatSummaryNumber(centerTemp)} °C` : "-"
+          });
+          summaryItems.push({
+            label: "center pressure",
+            value: typeof centerPressure === "number" ? `${formatSummaryNumber(centerPressure)} bar` : "-"
+          });
+        } else {
+          Object.entries(summaryData)
+            .filter(([key]) => !["experiment_id", "step_number"].includes(key))
+            .slice(0, 2)
+            .forEach(([key, value]) => {
+              summaryItems.push({
+                label: key.replace(/_/g, " "),
+                value: typeof value === "number" ? formatSummaryNumber(value) : String(value ?? "-")
+              });
+            });
+        }
+      }
+      return {
+        stepNumber,
+        name: stepDef.name,
+        status,
+        statusLabel,
+        summaryItems
+      };
+    });
     const summaryCount = qualSummaries.length;
     const autoStatus = summaryCount > 0 ? "in_progress" : "not_started";
     const autoStatusLabel = autoStatus === "in_progress" ? "In progress" : "Not started";
@@ -135,6 +202,7 @@ export function createExperimentsRouter(db: Db) {
     res.render("experiment_detail", {
       experiment,
       qualSummaries,
+      qualificationCards,
       status,
       statusLabel,
       autoStatus,

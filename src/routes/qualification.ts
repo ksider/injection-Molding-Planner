@@ -2,7 +2,6 @@ import express from "express";
 import type { Db } from "../db.js";
 import {
   ensureQualificationDefaults,
-  getQualificationSteps,
   getStepDefinition,
   recomputeDerivedAndSummary,
   saveQualRunValue,
@@ -16,7 +15,6 @@ import {
   listQualFields,
   listQualRuns,
   listQualRunValues,
-  listQualSteps,
   listQualSummaries,
   createQualRuns,
   getQualStepSettings,
@@ -48,18 +46,7 @@ export function createQualificationRouter(db: Db) {
 
   router.get("/experiments/:id/qualification", (req, res) => {
     const experimentId = Number(req.params.id);
-    ensureQualificationDefaults(db, experimentId);
-    const steps = listQualSteps(db, experimentId);
-    const summaries = listQualSummaries(db, experimentId);
-    const summaryMap = new Map(
-      summaries.map((summary) => [summary.step_number, summary.summary_json])
-    );
-    res.render("qualification_overview", {
-      experimentId,
-      steps,
-      stepDefinitions: getQualificationSteps(),
-      summaryMap
-    });
+    return res.redirect(`/experiments/${experimentId}#qualification`);
   });
 
   router.get("/experiments/:id/qualification/:step", (req, res) => {

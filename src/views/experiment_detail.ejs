@@ -62,21 +62,35 @@
     <div class="card-header">
       <h2 class="card-title">Research Sections</h2>
     </div>
-    <div class="section-list">
+    <div id="qualification" class="section-list">
       <div class="section-row">
         <div>
-          <a class="section-title" href="/experiments/<%= experiment.id %>/qualification"><strong>Qualification</strong></a>
+          <strong>Qualification</strong>
           <div class="small-note">Six-step Scientific Molding sequence.</div>
         </div>
-        <div class="section-actions">
-          <a class="pure-button pure-button-secondary" href="/experiments/<%= experiment.id %>/qualification">Open</a>
-          <a class="pure-button" href="/experiments/<%= experiment.id %>/qualification/1">Step 1</a>
-          <a class="pure-button" href="/experiments/<%= experiment.id %>/qualification/2">Step 2</a>
-          <a class="pure-button" href="/experiments/<%= experiment.id %>/qualification/3">Step 3</a>
-          <a class="pure-button" href="/experiments/<%= experiment.id %>/qualification/4">Step 4</a>
-          <a class="pure-button" href="/experiments/<%= experiment.id %>/qualification/5">Step 5</a>
-          <a class="pure-button" href="/experiments/<%= experiment.id %>/qualification/6">Step 6</a>
-        </div>
+      </div>
+      <div class="qualification-compact-grid">
+        <% (qualificationCards || []).forEach((card) => { %>
+          <div class="qualification-compact-card">
+            <div class="qualification-compact-head">
+              <a class="section-title" href="/experiments/<%= experiment.id %>/qualification/<%= card.stepNumber %>">Step <%= card.stepNumber %></a>
+              <span class="status-pill status-<%= card.status %>"><%= card.statusLabel %></span>
+            </div>
+            <div class="qualification-compact-name"><%- formatInline(card.name) %></div>
+            <div class="qualification-compact-summary">
+              <% if (card.summaryItems && card.summaryItems.length) { %>
+                <% card.summaryItems.forEach((item) => { %>
+                  <div class="qualification-compact-item">
+                    <span class="small-note"><%= item.label %></span>
+                    <strong><%= item.value %></strong>
+                  </div>
+                <% }); %>
+              <% } else { %>
+                <span class="small-note">No summary yet.</span>
+              <% } %>
+            </div>
+          </div>
+        <% }); %>
       </div>
     </div>
   </div>

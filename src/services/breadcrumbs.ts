@@ -111,7 +111,7 @@ export function buildBreadcrumbs(db: Db, req: Request): Breadcrumb[] {
 
     const second = segments[2];
     if (second === "qualification") {
-      push("Qualification", `/experiments/${experimentId}/qualification`);
+      push("Qualification", `/experiments/${experimentId}#qualification`);
       const step = Number(segments[3]);
       if (Number.isFinite(step)) {
         push(`Step ${step}`, `/experiments/${experimentId}/qualification/${step}`);
