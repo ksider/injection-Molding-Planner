@@ -34,6 +34,26 @@ npm run dev
 ```
 Open `http://localhost:3000`.
 
+## Project Structure
+```text
+.
+├─ src/
+│  ├─ app.ts                  # Express app bootstrap
+│  ├─ db.ts                   # SQLite connection + migrations
+│  ├─ routes/                 # HTTP routes (auth, experiments, reports, notes, etc.)
+│  ├─ services/               # Business logic (auth/report/tasks/qualification/markdown)
+│  ├─ repos/                  # Data access layer (SQLite queries)
+│  ├─ middleware/             # Auth/access/permission middlewares
+│  ├─ domain/                 # Domain math/helpers (DOE imports/stats/designs)
+│  ├─ views/                  # EJS pages + partials
+│  ├─ public/                 # Frontend assets (app.css, app.js, illustrations)
+│  └─ tests/                  # Integration tests
+├─ dist/                      # Compiled output (`npm run build`)
+├─ im_doe.sqlite              # Local SQLite database
+├─ plan.md                    # Product/feature roadmap
+└─ README.md
+```
+
 ## Auth Env (Stage 0 Prep)
 Create a `.env` file based on `.env.example` and set:
 - `SESSION_SECRET`
