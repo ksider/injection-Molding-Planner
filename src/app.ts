@@ -24,6 +24,7 @@ import { createReportRouter } from "./routes/report.js";
 import { createUsersRouter } from "./routes/users.js";
 import { createNotesRouter } from "./routes/notes.js";
 import { buildBreadcrumbs } from "./services/breadcrumbs.js";
+import { countUnreadNotifications } from "./repos/notifications_repo.js";
 
 export function createApp() {
   const app = express();
@@ -103,6 +104,9 @@ app.use(createHttpsRedirect(db));
 app.use((req, res, next) => {
   res.locals.currentUser = req.user ?? null;
   res.locals.breadcrumbs = buildBreadcrumbs(db, req);
+  res.locals.unreadNotifications = req.user?.id
+    ? countUnreadNotifications(db, req.user.id)
+    : 0;
   next();
 });
 

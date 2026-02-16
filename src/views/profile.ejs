@@ -80,6 +80,83 @@
   </div>
 
   <div class="card">
+    <h2 class="card-title">Assigned Entities</h2>
+    <table class="pure-table table-compact">
+      <thead>
+        <tr>
+          <th>Entity</th>
+          <th>Experiment</th>
+          <th>Assigned at</th>
+          <th>Assigned by</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!assignedEntities || assignedEntities.length === 0) { %>
+          <tr>
+            <td colspan="4">No entity assignments.</td>
+          </tr>
+        <% } %>
+        <% assignedEntities.forEach((item) => { %>
+          <tr>
+            <td><a href="<%= item.entityPath %>"><%- formatInline(item.entityTitle) %></a></td>
+            <td><a href="/experiments/<%= item.experiment_id %>"><%- formatInline(item.experiment_name) %></a></td>
+            <td><%= new Date(item.updated_at || item.assigned_at).toLocaleString() %></td>
+            <td><%- formatInline(item.assigned_by_name || item.assigned_by_email || '-') %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card" id="notifications">
+    <div class="card-header">
+      <h2 class="card-title">Notifications</h2>
+      <form class="pure-form" action="/me/notifications/read-all" method="post">
+        <button class="pure-button" type="submit">Mark all as read</button>
+      </form>
+    </div>
+    <table class="pure-table table-compact">
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Message</th>
+          <th>Time</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (!notifications || notifications.length === 0) { %>
+          <tr>
+            <td colspan="4">No notifications.</td>
+          </tr>
+        <% } %>
+        <% notifications.forEach((note) => { %>
+          <tr>
+            <td><span class="status-pill status-<%= note.status === 'unread' ? 'in_progress' : 'done' %>"><%= note.status %></span></td>
+            <td>
+              <strong><%- formatInline(note.title) %></strong>
+              <% if (note.body) { %>
+                <div class="small-note"><%- formatInline(note.body) %></div>
+              <% } %>
+              <% if (note.path) { %>
+                <div><a href="<%= note.path %>">Open</a></div>
+              <% } %>
+            </td>
+            <td><%= new Date(note.created_at).toLocaleString() %></td>
+            <td>
+              <% if (note.status === 'unread') { %>
+                <form class="pure-form" action="/me/notifications/<%= note.id %>/read" method="post">
+                  <button class="pure-button pure-button-secondary" type="submit">Mark read</button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
     <h2 class="card-title">My Experiments</h2>
     <table class="pure-table table-compact">
       <thead>

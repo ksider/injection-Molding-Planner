@@ -34,6 +34,9 @@ import {
 import { getMachine } from "../repos/machines_repo.js";
 import { listMachineParams } from "../repos/machine_params_repo.js";
 import { ensureExperimentAccess } from "../middleware/experiment_access.js";
+import { listUsers, findUserById } from "../repos/users_repo.js";
+import { getEntityAssignment } from "../repos/entity_assignments_repo.js";
+import { canAssignEntityResponsibility } from "../services/entity_assignment_service.js";
 
 function hasRole(req: express.Request, roles: string[]) {
   return roles.includes(req.user?.role ?? "");
@@ -168,6 +171,15 @@ export function createQualificationRouter(db: Db) {
       );
     }
 
+    const canAssignEntities = canAssignEntityResponsibility(req.user, experiment);
+    const assignableUsers = canAssignEntities
+      ? listUsers(db).filter((user) => user.status === "ACTIVE")
+      : [];
+    const assignment = getEntityAssignment(db, "qualification_step", step.id);
+    const stepAssigneeId = assignment?.assignee_user_id ?? null;
+    const stepAssignee = stepAssigneeId ? findUserById(db, stepAssigneeId) : null;
+    const stepAssigneeLabel = stepAssignee?.name?.trim() || stepAssignee?.email?.trim() || null;
+
     res.render("qualification_step", {
       experimentId,
       step,
@@ -185,7 +197,11 @@ export function createQualificationRouter(db: Db) {
       machineInjectionPressure,
       machineIntensification,
       machineParamMap,
-      summaryJson: summaryRow?.summary_json ?? null
+      summaryJson: summaryRow?.summary_json ?? null,
+      canAssignEntities,
+      assignableUsers,
+      stepAssigneeId,
+      stepAssigneeLabel
     });
   });
 

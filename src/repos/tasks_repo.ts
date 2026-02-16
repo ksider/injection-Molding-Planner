@@ -113,6 +113,10 @@ export function listTaskEntities(db: Db, taskId: number): TaskEntityRow[] {
     .all(taskId) as TaskEntityRow[];
 }
 
+export function getTaskEntity(db: Db, entityId: number): TaskEntityRow | undefined {
+  return db.prepare("SELECT * FROM task_entities WHERE id = ?").get(entityId) as TaskEntityRow | undefined;
+}
+
 export function createTaskEntity(
   db: Db,
   data: {

@@ -9,6 +9,7 @@ import {
   deleteTask,
   deleteTaskAssignment,
   deleteTaskEntity,
+  getTaskEntity,
   getTask,
   listTaskAssignments,
   listTaskEntities,
@@ -230,6 +231,15 @@ export function createTasksRouter(db: Db) {
   router.post("/tasks/:id/sign", requireTaskManager, (req, res) => {
     const entityId = Number(req.body?.entity_id);
     if (!Number.isFinite(entityId)) return res.status(400).json({ error: "Invalid entity" });
+    const entity = getTaskEntity(db, entityId);
+    if (!entity) return res.status(404).json({ error: "Entity not found" });
+    if (entity.entity_type === "report") {
+      const task = getTask(db, entity.task_id);
+      const experiment = task ? getExperiment(db, task.experiment_id) : null;
+      if (!experiment || !req.user?.id || experiment.owner_user_id !== req.user.id) {
+        return res.status(403).json({ error: "Only experiment owner can sign report entities." });
+      }
+    }
     updateTaskEntity(db, entityId, {
       signature_required: 1,
       signature_user_id: req.user?.id ?? null,

@@ -77,6 +77,15 @@
               <span class="status-pill status-<%= card.status %>"><%= card.statusLabel %></span>
             </div>
             <div class="qualification-compact-name"><%- formatInline(card.name) %></div>
+            <div class="small-note">
+              Responsible:
+              <% const stepAssigneeId = card.stepId ? assignmentByStep.get(card.stepId) : null; %>
+              <% if (stepAssigneeId) { %>
+                <a href="/users/<%= stepAssigneeId %>"><%- formatInline(userLabelById.get(stepAssigneeId) || `User #${stepAssigneeId}`) %></a>
+              <% } else { %>
+                <span>-</span>
+              <% } %>
+            </div>
             <div class="qualification-compact-summary">
               <% if (card.summaryItems && card.summaryItems.length) { %>
                 <% card.summaryItems.forEach((item) => { %>
@@ -113,6 +122,27 @@
             <div class="section-main">
               <a class="section-title" href="/experiments/<%= experiment.id %>/doe/<%= doe.id %>?tab=design"><strong><%- formatInline(doe.name) %></strong></a>
               <div class="small-note">Type: <%= doe.design_type %> · Seed: <%= doe.seed %></div>
+              <div class="small-note">
+                Responsible:
+                <% const doeAssigneeId = assignmentByDoe.get(doe.id); %>
+                <% if (doeAssigneeId) { %>
+                  <a href="/users/<%= doeAssigneeId %>"><%- formatInline(userLabelById.get(doeAssigneeId) || `User #${doeAssigneeId}`) %></a>
+                <% } else { %>
+                  <span>-</span>
+                <% } %>
+              </div>
+              <% if (canAssignEntities) { %>
+                <form class="pure-form assignment-form" action="/experiments/<%= experiment.id %>/doe/<%= doe.id %>/assignee" method="post">
+                  <select name="assignee_user_id" onchange="this.form.submit()">
+                    <option value="">Unassigned</option>
+                    <% assignableUsers.forEach((user) => { %>
+                      <option value="<%= user.id %>" <%= doeAssigneeId === user.id ? 'selected' : '' %>>
+                        <%= user.name || user.email %> (<%= user.role || 'user' %>)
+                      </option>
+                    <% }); %>
+                  </select>
+                </form>
+              <% } %>
             </div>
           <div class="section-actions">
             <a class="pure-button pure-button-secondary" href="/experiments/<%= experiment.id %>/doe/<%= doe.id %>?tab=analysis">Analysis</a>

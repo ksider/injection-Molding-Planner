@@ -8,7 +8,6 @@ import {
 } from "../services/experiments_service.js";
 import { ensureQualificationDefaults, getQualificationSteps } from "../services/qualification_service.js";
 import { listRecipes, getRecipeComponents } from "../repos/recipes_repo.js";
-import { listMachines } from "../repos/machines_repo.js";
 import {
   getExperiment,
   getExperimentRecipes,
@@ -63,6 +62,11 @@ import {
   updateExperimentManualDone
 } from "../repos/experiments_repo.js";
 import { listUsers, findUserById } from "../repos/users_repo.js";
+import { listEntityAssignmentsByExperiment } from "../repos/entity_assignments_repo.js";
+import {
+  assignEntityResponsibility,
+  canAssignEntityResponsibility
+} from "../services/entity_assignment_service.js";
 
 // Local helper for role checks in this router.
 function hasRole(req: express.Request, roles: string[]) {
@@ -125,6 +129,7 @@ export function createExperimentsRouter(db: Db) {
     const qualSummaries = listQualSummaries(db, experimentId);
     const qualSteps = listQualSteps(db, experimentId);
     const stepStatusByNumber = new Map(qualSteps.map((step) => [step.step_number, step.status]));
+    const stepIdByNumber = new Map(qualSteps.map((step) => [step.step_number, step.id]));
     const summaryByStep = new Map(qualSummaries.map((summary) => [summary.step_number, summary.summary_json]));
     const qualificationCards = getQualificationSteps().map((stepDef) => {
       const stepNumber = stepDef.step_number;
@@ -172,6 +177,7 @@ export function createExperimentsRouter(db: Db) {
         }
       }
       return {
+        stepId: stepIdByNumber.get(stepNumber) ?? null,
         stepNumber,
         name: stepDef.name,
         status,
@@ -192,9 +198,24 @@ export function createExperimentsRouter(db: Db) {
     const recipeNameById = new Map(listRecipes(db).map((recipe) => [recipe.id, recipe.name]));
     const recipeNames = recipeIds.map((id) => recipeNameById.get(id)).filter(Boolean);
     const reports = listReportConfigs(db, experimentId);
+    const entityAssignments = listEntityAssignmentsByExperiment(db, experimentId);
+    const assignmentByStep = new Map<number, number | null>();
+    const assignmentByDoe = new Map<number, number | null>();
+    entityAssignments.forEach((row) => {
+      if (row.entity_type === "qualification_step") {
+        assignmentByStep.set(row.entity_id, row.assignee_user_id ?? null);
+      } else if (row.entity_type === "doe") {
+        assignmentByDoe.set(row.entity_id, row.assignee_user_id ?? null);
+      }
+    });
     // Owner selection is visible only to admin/manager.
     const canManageOwner = req.user?.role === "admin" || req.user?.role === "manager";
-    const users = canManageOwner ? listUsers(db) : [];
+    const canAssignEntities = canAssignEntityResponsibility(req.user, experiment);
+    const users = canManageOwner || canAssignEntities ? listUsers(db) : [];
+    const assignableUsers = users.filter((user) => user.status === "ACTIVE");
+    const userLabelById = new Map(
+      assignableUsers.map((user) => [user.id, user.name?.trim() || user.email.trim()])
+    );
     const ownerUser = experiment.owner_user_id
       ? findUserById(db, experiment.owner_user_id)
       : null;
@@ -213,7 +234,12 @@ export function createExperimentsRouter(db: Db) {
       recipeNames,
       reports,
       users,
+      assignableUsers,
+      userLabelById,
       canManageOwner,
+      canAssignEntities,
+      assignmentByStep,
+      assignmentByDoe,
       ownerName
     });
   });
@@ -399,6 +425,60 @@ export function createExperimentsRouter(db: Db) {
     const name = String(req.body?.name || "").trim();
     if (name) updateDoeStudyName(db, doeId, name);
     res.redirect(`/experiments/${experimentId}/doe/${doeId}?tab=design`);
+  });
+
+  router.post("/experiments/:id/qualification/:step/assignee", (req, res) => {
+    const experimentId = Number(req.params.id);
+    const stepNumber = Number(req.params.step);
+    const experiment = getExperiment(db, experimentId);
+    if (!experiment) return res.status(404).send("Experiment not found");
+    if (!canAssignEntityResponsibility(req.user, experiment)) {
+      return res.status(403).send("Forbidden");
+    }
+    const step = listQualSteps(db, experimentId).find((item) => item.step_number === stepNumber);
+    if (!step) return res.status(404).send("Step not found");
+    const rawAssignee = String(req.body?.assignee_user_id ?? "").trim();
+    const assigneeUserId = rawAssignee ? Number(rawAssignee) : null;
+    if (rawAssignee && !Number.isFinite(assigneeUserId)) {
+      return res.status(400).send("Invalid assignee");
+    }
+    assignEntityResponsibility(db, {
+      experimentId,
+      entityType: "qualification_step",
+      entityId: step.id,
+      assigneeUserId,
+      assignedByUserId: req.user?.id ?? null,
+      experimentName: experiment.name
+    });
+    res.redirect(`/experiments/${experimentId}#qualification`);
+  });
+
+  router.post("/experiments/:id/doe/:doeId/assignee", (req, res) => {
+    const experimentId = Number(req.params.id);
+    const doeId = Number(req.params.doeId);
+    const experiment = getExperiment(db, experimentId);
+    if (!experiment) return res.status(404).send("Experiment not found");
+    if (!canAssignEntityResponsibility(req.user, experiment)) {
+      return res.status(403).send("Forbidden");
+    }
+    const doe = getDoeStudy(db, doeId);
+    if (!doe || doe.experiment_id !== experimentId) {
+      return res.status(404).send("DOE not found");
+    }
+    const rawAssignee = String(req.body?.assignee_user_id ?? "").trim();
+    const assigneeUserId = rawAssignee ? Number(rawAssignee) : null;
+    if (rawAssignee && !Number.isFinite(assigneeUserId)) {
+      return res.status(400).send("Invalid assignee");
+    }
+    assignEntityResponsibility(db, {
+      experimentId,
+      entityType: "doe",
+      entityId: doeId,
+      assigneeUserId,
+      assignedByUserId: req.user?.id ?? null,
+      experimentName: experiment.name
+    });
+    res.redirect(`/experiments/${experimentId}`);
   });
 
   router.get("/experiments/:id/doe", (req, res) => {

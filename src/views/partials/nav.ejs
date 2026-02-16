@@ -26,6 +26,12 @@
   </div>
   <% if (currentUser) { %>
     <div class="nav-auth">
+      <a class="nav-bell" href="/me#notifications" title="Notifications">
+        <span class="material-symbols-rounded" aria-hidden="true">notifications</span>
+        <% if (unreadNotifications && unreadNotifications > 0) { %>
+          <span class="nav-bell-badge"><%= unreadNotifications > 99 ? '99+' : unreadNotifications %></span>
+        <% } %>
+      </a>
       <span class="nav-user">
         <a href="/me"><%= currentUser.name ? currentUser.name : currentUser.email %></a>
       </span>

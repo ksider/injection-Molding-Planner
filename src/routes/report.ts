@@ -16,6 +16,7 @@ import {
   unsignReportConfig,
   upsertReportDocument
 } from "../repos/reports_repo.js";
+import { getExperiment } from "../repos/experiments_repo.js";
 import { findUserById } from "../repos/users_repo.js";
 import { ensureExperimentAccess, ensureReportAccess } from "../middleware/experiment_access.js";
 
@@ -100,7 +101,9 @@ export function createReportRouter(db: Db) {
     };
     const reportData = buildReport(db, config.experiment_id, options);
     const signer = config.signed_by_user_id ? findUserById(db, config.signed_by_user_id) : null;
-    res.render("report", { report: reportData, options, reportConfig: config, signer });
+    const experiment = getExperiment(db, config.experiment_id);
+    const canSignReport = Boolean(req.user?.id && experiment?.owner_user_id === req.user.id);
+    res.render("report", { report: reportData, options, reportConfig: config, signer, canSignReport });
   });
 
   router.get("/reports/:reportId/editor", (req, res) => {
@@ -199,24 +202,27 @@ export function createReportRouter(db: Db) {
   });
 
   router.post("/reports/:reportId/sign", (req, res) => {
-    if (!hasRole(req, ["admin", "manager"])) {
-      return res.status(403).send("Forbidden");
-    }
     const reportId = Number(req.params.reportId);
     const config = getReportConfig(db, reportId);
     if (!config) return res.status(404).send("Report not found");
     if (!req.user?.id) return res.status(403).send("Forbidden");
+    const experiment = getExperiment(db, config.experiment_id);
+    if (!experiment || experiment.owner_user_id !== req.user.id) {
+      return res.status(403).send("Only experiment owner can sign this report.");
+    }
     signReportConfig(db, reportId, req.user.id);
     res.redirect(`/reports/${reportId}`);
   });
 
   router.post("/reports/:reportId/unsign", (req, res) => {
-    if (!hasRole(req, ["admin", "manager"])) {
-      return res.status(403).send("Forbidden");
-    }
     const reportId = Number(req.params.reportId);
     const config = getReportConfig(db, reportId);
     if (!config) return res.status(404).send("Report not found");
+    if (!req.user?.id) return res.status(403).send("Forbidden");
+    const experiment = getExperiment(db, config.experiment_id);
+    if (!experiment || experiment.owner_user_id !== req.user.id) {
+      return res.status(403).send("Only experiment owner can withdraw signature.");
+    }
     unsignReportConfig(db, reportId);
     res.redirect(`/reports/${reportId}`);
   });

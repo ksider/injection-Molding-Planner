@@ -69,6 +69,36 @@ sub {
   gap: 0.75rem;
 }
 
+.nav-bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--ink);
+  text-decoration: none;
+  background: #f8f6f2;
+}
+
+.nav-bell-badge {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.22rem;
+  border-radius: 999px;
+  background: #d95f5f;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1rem;
+  text-align: center;
+}
+
 .breadcrumb {
   display: flex;
   align-items: center;
@@ -998,6 +1028,14 @@ sub {
 .qualification-compact-summary {
   display: grid;
   gap: 0.2rem;
+}
+
+.assignment-form {
+  margin: 0.15rem 0 0.3rem;
+}
+
+.assignment-form select {
+  min-width: 200px;
 }
 
 .qualification-compact-item {

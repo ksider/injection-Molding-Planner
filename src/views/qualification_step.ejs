@@ -7,6 +7,28 @@
         <span class="material-symbols-rounded" aria-hidden="true">arrow_back</span>
       </a>
       <h1 class="card-title">Step <%= step.step_number %>: <%= stepDef?.name || 'Qualification Step' %></h1>
+      <div class="section-actions">
+        <div class="small-note">
+          Responsible:
+          <% if (stepAssigneeId) { %>
+            <a href="/users/<%= stepAssigneeId %>"><%- formatInline(stepAssigneeLabel || `User #${stepAssigneeId}`) %></a>
+          <% } else { %>
+            <span>-</span>
+          <% } %>
+        </div>
+        <% if (canAssignEntities) { %>
+          <form class="pure-form assignment-form" action="/experiments/<%= experimentId %>/qualification/<%= step.step_number %>/assignee" method="post">
+            <select name="assignee_user_id" onchange="this.form.submit()">
+              <option value="">Unassigned</option>
+              <% assignableUsers.forEach((user) => { %>
+                <option value="<%= user.id %>" <%= stepAssigneeId === user.id ? 'selected' : '' %>>
+                  <%= user.name || user.email %> (<%= user.role || 'user' %>)
+                </option>
+              <% }); %>
+            </select>
+          </form>
+        <% } %>
+      </div>
     </div>
     <div class="run-controls">
       <button class="pure-button pure-button-secondary" type="button" id="openQualFields">

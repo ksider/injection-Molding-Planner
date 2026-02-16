@@ -92,6 +92,17 @@ Planned: export data to CSV.
 - Reports can be signed inside the task popup (manager/engineer/admin).
 - Each task has calendar actions: download .ics or open a Google Calendar link.
 
+## Entity Responsibility + Notifications
+- Experiment owner (and admin/manager) can assign responsible users to:
+  - Qualification steps
+  - DOE studies
+- Assignment creates/updates an automatic task for the assignee.
+- Assignees get in-app notifications (with unread badge in top navigation).
+- Profile page includes:
+  - assigned entities list (entity + experiment links)
+  - notifications feed with mark-read actions
+- Report signature is restricted to the experiment owner.
+
 ## Notes & Lab Journal
 - Notes are available in a bottom drawer on:
   - Experiment page

@@ -1,7 +1,7 @@
 import express from "express";
 import type { Db } from "../db.js";
 import {
-  listExperimentsForOwnerWithMeta,
+  listExperimentsForUserWithMeta,
   listExperimentsWithMeta,
   type ExperimentListRow
 } from "../repos/experiments_repo.js";
@@ -29,10 +29,10 @@ export function createHomeRouter(db: Db) {
   router.get("/", (req, res) => {
     // Admin sees all active experiments; others see only their own.
     const experiments =
-      req.user?.role === "admin"
+      req.user?.role === "admin" || req.user?.role === "manager"
         ? listExperimentsWithMeta(db, false)
         : req.user?.id
-          ? listExperimentsForOwnerWithMeta(db, req.user.id, false)
+          ? listExperimentsForUserWithMeta(db, req.user.id, false)
           : [];
     res.render("home", { experiments: enrich(experiments) });
   });
@@ -40,7 +40,7 @@ export function createHomeRouter(db: Db) {
   router.get("/my-experiments", (req, res) => {
     // Personal list for the current user.
     const experiments = req.user?.id
-      ? listExperimentsForOwnerWithMeta(db, req.user.id, false)
+      ? listExperimentsForUserWithMeta(db, req.user.id, false)
       : [];
     res.render("my_experiments", { experiments: enrich(experiments) });
   });

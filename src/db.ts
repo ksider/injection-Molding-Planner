@@ -143,6 +143,41 @@ function initDb(db: Db) {
       FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE,
       FOREIGN KEY (edited_by_user_id) REFERENCES users(id) ON DELETE SET NULL
     );
+    CREATE TABLE IF NOT EXISTS entity_assignments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      experiment_id INTEGER NOT NULL,
+      entity_type TEXT NOT NULL, -- qualification_step | doe
+      entity_id INTEGER NOT NULL,
+      assignee_user_id INTEGER,
+      assigned_by_user_id INTEGER,
+      status TEXT NOT NULL DEFAULT 'active', -- active | revoked
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      UNIQUE(entity_type, entity_id),
+      FOREIGN KEY (experiment_id) REFERENCES experiments(id) ON DELETE CASCADE,
+      FOREIGN KEY (assignee_user_id) REFERENCES users(id) ON DELETE SET NULL,
+      FOREIGN KEY (assigned_by_user_id) REFERENCES users(id) ON DELETE SET NULL
+    );
+    CREATE TABLE IF NOT EXISTS assignment_tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      assignment_id INTEGER NOT NULL UNIQUE,
+      task_id INTEGER NOT NULL UNIQUE,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (assignment_id) REFERENCES entity_assignments(id) ON DELETE CASCADE,
+      FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      type TEXT NOT NULL, -- assignment | system | message (future)
+      title TEXT NOT NULL,
+      body TEXT,
+      payload_json TEXT,
+      status TEXT NOT NULL DEFAULT 'unread', -- unread | read | archived
+      created_at TEXT NOT NULL,
+      read_at TEXT,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
     CREATE TABLE IF NOT EXISTS recipes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
@@ -391,6 +426,9 @@ function initDb(db: Db) {
     CREATE INDEX IF NOT EXISTS idx_task_entities_task_id ON task_entities(task_id);
     CREATE INDEX IF NOT EXISTS idx_task_assignments_task_id ON task_assignments(task_id);
     CREATE INDEX IF NOT EXISTS idx_note_versions_note_id ON note_versions(note_id);
+    CREATE INDEX IF NOT EXISTS idx_entity_assignments_experiment_id ON entity_assignments(experiment_id);
+    CREATE INDEX IF NOT EXISTS idx_entity_assignments_assignee ON entity_assignments(assignee_user_id);
+    CREATE INDEX IF NOT EXISTS idx_notifications_user_status ON notifications(user_id, status, created_at);
   `);
 
   const adminSettingsCount = db
@@ -460,6 +498,18 @@ function initDb(db: Db) {
   }
   if (!hasColumn(db, "report_configs", "signed_by_user_id")) {
     db.exec("ALTER TABLE report_configs ADD COLUMN signed_by_user_id INTEGER");
+  }
+  if (!hasColumn(db, "entity_assignments", "status")) {
+    db.exec("ALTER TABLE entity_assignments ADD COLUMN status TEXT NOT NULL DEFAULT 'active'");
+  }
+  if (!hasColumn(db, "notifications", "payload_json")) {
+    db.exec("ALTER TABLE notifications ADD COLUMN payload_json TEXT");
+  }
+  if (!hasColumn(db, "notifications", "status")) {
+    db.exec("ALTER TABLE notifications ADD COLUMN status TEXT NOT NULL DEFAULT 'unread'");
+  }
+  if (!hasColumn(db, "notifications", "read_at")) {
+    db.exec("ALTER TABLE notifications ADD COLUMN read_at TEXT");
   }
   if (!hasColumn(db, "report_documents", "content_md")) {
     db.exec("ALTER TABLE report_documents ADD COLUMN content_md TEXT");

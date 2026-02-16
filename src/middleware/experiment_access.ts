@@ -3,6 +3,7 @@ import type { Request, Response, NextFunction } from "express";
 import { getExperiment } from "../repos/experiments_repo.js";
 import { getReportConfig } from "../repos/reports_repo.js";
 import { getRun } from "../repos/runs_repo.js";
+import { hasActiveAssignmentForExperiment } from "../repos/entity_assignments_repo.js";
 
 export function ensureExperimentAccess(db: Db) {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -13,7 +14,7 @@ export function ensureExperimentAccess(db: Db) {
     const experiment = getExperiment(db, experimentId);
     if (!experiment) return res.status(404).send("Experiment not found");
 
-    if (canAccessExperiment(req.user, experiment)) return next();
+    if (canAccessExperiment(db, req.user, experimentId, experiment)) return next();
     return res.status(403).send("Forbidden");
   };
 }
@@ -26,7 +27,7 @@ export function ensureReportAccess(db: Db) {
     if (!config) return res.status(404).send("Report not found");
     const experiment = getExperiment(db, config.experiment_id);
     if (!experiment) return res.status(404).send("Experiment not found");
-    if (canAccessExperiment(req.user, experiment)) return next();
+    if (canAccessExperiment(db, req.user, config.experiment_id, experiment)) return next();
     return res.status(403).send("Forbidden");
   };
 }
@@ -39,16 +40,21 @@ export function ensureRunAccess(db: Db) {
     if (!run) return res.status(404).send("Run not found");
     const experiment = getExperiment(db, run.experiment_id);
     if (!experiment) return res.status(404).send("Experiment not found");
-    if (canAccessExperiment(req.user, experiment)) return next();
+    if (canAccessExperiment(db, req.user, run.experiment_id, experiment)) return next();
     return res.status(403).send("Forbidden");
   };
 }
 
 function canAccessExperiment(
+  db: Db,
   user: Express.User | undefined,
+  experimentId: number,
   experiment: { owner_user_id: number | null }
 ) {
   if (user?.role === "admin") return true;
+  if (user?.role === "manager") return true;
   if (experiment.owner_user_id == null) return true;
-  return user?.id === experiment.owner_user_id;
+  if (user?.id === experiment.owner_user_id) return true;
+  if (!user?.id) return false;
+  return hasActiveAssignmentForExperiment(db, experimentId, user.id);
 }

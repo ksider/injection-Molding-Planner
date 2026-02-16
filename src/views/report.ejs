@@ -48,7 +48,7 @@
         <% } else { %>
           <a class="pure-button pure-button-secondary" href="/reports/<%= reportConfig.id %>/editor">Text version</a>
         <% } %>
-        <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager')) { %>
+        <% if (canSignReport) { %>
           <% if (reportConfig.signed_at) { %>
             <form class="pure-form inline-form" action="/reports/<%= reportConfig.id %>/unsign" method="post" onsubmit="return confirm('Withdraw signature?');">
               <button class="pure-button" type="submit">Withdraw signature</button>

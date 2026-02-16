@@ -105,6 +105,45 @@ export function listExperimentsForOwnerWithMeta(
   return db.prepare(sql).all(ownerUserId) as ExperimentListRow[];
 }
 
+export function listExperimentsForUserWithMeta(
+  db: Db,
+  userId: number,
+  includeArchived = false
+): ExperimentListRow[] {
+  const archivedSql = includeArchived ? "" : "AND experiments.archived_at IS NULL";
+  const sql = `
+    SELECT
+      experiments.*,
+      users.name as owner_name,
+      users.email as owner_email,
+      (
+        SELECT COUNT(DISTINCT step_number)
+        FROM qual_step_summary
+        WHERE qual_step_summary.experiment_id = experiments.id
+      ) as qual_summary_count,
+      (
+        SELECT COUNT(*)
+        FROM qual_run_values
+        JOIN qual_runs ON qual_runs.id = qual_run_values.run_id
+        WHERE qual_runs.experiment_id = experiments.id
+      ) as qual_run_value_count
+    FROM experiments
+    LEFT JOIN users ON users.id = experiments.owner_user_id
+    WHERE (
+      experiments.owner_user_id = ?
+      OR EXISTS (
+        SELECT 1 FROM entity_assignments ea
+        WHERE ea.experiment_id = experiments.id
+          AND ea.assignee_user_id = ?
+          AND ea.status = 'active'
+      )
+    )
+    ${archivedSql}
+    ORDER BY experiments.id DESC
+  `;
+  return db.prepare(sql).all(userId, userId) as ExperimentListRow[];
+}
+
 export function getExperiment(db: Db, id: number): Experiment | undefined {
   return db.prepare("SELECT * FROM experiments WHERE id = ?").get(id) as Experiment | undefined;
 }
