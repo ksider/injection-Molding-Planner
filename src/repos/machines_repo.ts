@@ -11,8 +11,41 @@ export type Machine = {
   created_at: string;
 };
 
+export type MachineLibraryRow = {
+  id: number;
+  name: string;
+  image_url: string | null;
+  vendor: string | null;
+  model: string | null;
+  tie_bar_distance_mm: number | null;
+  platen_size_mm: number | null;
+  clamp_force_kN: number | null;
+  injection_pressure_bar: number | null;
+  intensification_ratio: number | null;
+};
+
 export function listMachines(db: Db): Machine[] {
   return db.prepare("SELECT * FROM machines ORDER BY id DESC").all() as Machine[];
+}
+
+export function listMachinesForLibrary(db: Db): MachineLibraryRow[] {
+  return db
+    .prepare(
+      `SELECT
+         id,
+         name,
+         image_url,
+         vendor,
+         model,
+         CAST(json_extract(settings_json, '$.tie_bar_distance_mm') AS REAL) as tie_bar_distance_mm,
+         CAST(json_extract(settings_json, '$.platen_size_mm') AS REAL) as platen_size_mm,
+         CAST(json_extract(settings_json, '$.clamp_force_kN') AS REAL) as clamp_force_kN,
+         CAST(json_extract(settings_json, '$.injection_pressure_bar') AS REAL) as injection_pressure_bar,
+         CAST(json_extract(settings_json, '$.intensification_ratio') AS REAL) as intensification_ratio
+       FROM machines
+       ORDER BY id DESC`
+    )
+    .all() as MachineLibraryRow[];
 }
 
 export function getMachine(db: Db, id: number): Machine | undefined {

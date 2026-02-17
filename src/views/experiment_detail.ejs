@@ -404,7 +404,7 @@
               </div>
             </div>
           </div>
-          <div id="notesInput" class="journal-editor" contenteditable="true" data-placeholder="Write note for current experiment context..."></div>
+          <div id="notesInput" class="journal-editor" tabindex="0" data-placeholder="Write note for current experiment context..."></div>
           <div class="notes-compose-footer">
             <span class="small-note">Ctrl/Cmd+Enter: append today · Ctrl/Cmd+Shift+Enter: new note</span>
             <button class="pure-button pure-button-primary" type="button" id="notesSendBtn">Add note</button>
@@ -1066,6 +1066,8 @@
   const notesTablePickerLabel = notesToolbar?.querySelector('[data-notes-table-picker-label]') || null;
   let notesEditor = null;
   let notesEditorReady = null;
+  let notesEditorInitFailed = false;
+  let notesEditorLastError = null;
   let editingNoteId = null;
   let railTooltipEl = null;
   let mathRenderer = null;
@@ -1205,32 +1207,48 @@
 
   async function ensureNotesEditor() {
     if (!notesInput) return null;
+    if (notesEditorInitFailed) {
+      if (notesEditorLastError) {
+        console.warn('Notes editor init already failed earlier:', notesEditorLastError);
+      }
+      return null;
+    }
     if (notesEditor) return notesEditor;
     if (notesEditorReady) return notesEditorReady;
     notesEditorReady = (async () => {
+      try {
       ensureKatexCss();
-      const [{ Editor }, { default: StarterKit }, { default: Underline }, { default: Link }, { default: Image }, { default: TextAlign }, { Table }, { default: TableRow }, { default: TableHeader }, { default: TableCell }, { default: TaskList }, { default: TaskItem }, { default: Superscript }, { default: Subscript }, { default: Highlight }, textStyleModule, { FontFamily }, mathModule] = await Promise.all([
-        import('https://esm.sh/@tiptap/core@3.19.0'),
-        import('https://esm.sh/@tiptap/starter-kit@3.19.0'),
-        import('https://esm.sh/@tiptap/extension-underline@3.19.0'),
-        import('https://esm.sh/@tiptap/extension-link@3.19.0'),
-        import('https://esm.sh/@tiptap/extension-image@3.19.0'),
-        import('https://esm.sh/@tiptap/extension-text-align@3.19.0'),
-        import('https://esm.sh/@tiptap/extension-table@3.19.0'),
-        import('https://esm.sh/@tiptap/extension-table-row@3.19.0'),
-        import('https://esm.sh/@tiptap/extension-table-header@3.19.0'),
-        import('https://esm.sh/@tiptap/extension-table-cell@3.19.0'),
-        import('https://esm.sh/@tiptap/extension-task-list@3.19.0'),
-        import('https://esm.sh/@tiptap/extension-task-item@3.19.0'),
-        import('https://esm.sh/@tiptap/extension-superscript@3.19.0'),
-        import('https://esm.sh/@tiptap/extension-subscript@3.19.0'),
-        import('https://esm.sh/@tiptap/extension-highlight@3.19.0'),
-        import('https://esm.sh/@tiptap/extension-text-style@3.19.0'),
-        import('https://esm.sh/@tiptap/extension-font-family@3.19.0'),
-        import('https://esm.sh/@aarkue/tiptap-math-extension@1.4.0').catch(() => null)
+      const [{ Editor }, { default: StarterKit }, { default: Underline }, { default: Link }, { default: TextAlign }, tableModule, { default: TaskList }, { default: TaskItem }, { default: Superscript }, { default: Subscript }, { default: Highlight }, textStyleModule, { default: BaseImage }, mathModule] = await Promise.all([
+        import('@tiptap/core'),
+        import('@tiptap/starter-kit'),
+        import('@tiptap/extension-underline'),
+        import('@tiptap/extension-link'),
+        import('@tiptap/extension-text-align'),
+        import('@tiptap/extension-table'),
+        import('@tiptap/extension-task-list'),
+        import('@tiptap/extension-task-item'),
+        import('@tiptap/extension-superscript'),
+        import('@tiptap/extension-subscript'),
+        import('@tiptap/extension-highlight'),
+        import('@tiptap/extension-text-style'),
+        import('@tiptap/extension-image'),
+        import('https://unpkg.com/@aarkue/tiptap-math-extension@1.4.0/dist/index.js?module').catch(() => null)
       ]);
-      const { TextStyle, FontSize, LineHeight } = textStyleModule;
+      const { Table, TableRow, TableHeader, TableCell } = tableModule;
+      const { TextStyle, FontSize, LineHeight, FontFamily } = textStyleModule;
       const MathExtension = mathModule?.default || null;
+      const Image = BaseImage.extend({
+        addAttributes() {
+          return {
+            ...this.parent?.(),
+            style: {
+              default: null,
+              parseHTML: (el) => el.getAttribute('style'),
+              renderHTML: (attrs) => attrs.style ? { style: attrs.style } : {}
+            }
+          };
+        }
+      });
       notesEditor = new Editor({
         element: notesInput,
         editable: true,
@@ -1292,8 +1310,37 @@
         }
       }, true);
         return notesEditor;
+      } catch (error) {
+        console.error('Failed to initialize notes editor, fallback to plain mode.', error);
+        notesEditor = null;
+        notesEditorReady = null;
+        notesEditorInitFailed = true;
+        notesEditorLastError = error;
+        // Keep plain editor mode functional when rich editor cannot be initialized.
+        notesInput.setAttribute('contenteditable', 'true');
+        return null;
+      }
       })();
     return notesEditorReady;
+  }
+
+  async function focusNotesInput() {
+    if (!notesInput) return;
+    const editor = await ensureNotesEditor();
+    if (editor) {
+      requestAnimationFrame(() => {
+        try {
+          editor.view.focus();
+          editor.commands.focus('end');
+        } catch (error) {
+          console.warn('Failed to focus rich notes editor, fallback to plain focus.', error);
+          notesInput.focus();
+        }
+      });
+      return;
+    }
+    notesInput.setAttribute('contenteditable', 'true');
+    requestAnimationFrame(() => notesInput.focus());
   }
 
   const closeNotesTablePicker = () => {
@@ -1345,65 +1392,109 @@
 
   async function notesExecCommand(command, options = {}) {
     const editor = await ensureNotesEditor();
-    if (!editor) return;
+    if (!editor) {
+      console.warn('Notes command skipped because editor is unavailable:', command);
+      return;
+    }
     const chain = editor.chain().focus();
-    if (command === 'h1') chain.toggleHeading({ level: 1 }).run();
-    if (command === 'h2') chain.toggleHeading({ level: 2 }).run();
-    if (command === 'h3') chain.toggleHeading({ level: 3 }).run();
-    if (command === 'bold') chain.toggleBold().run();
-    if (command === 'italic') chain.toggleItalic().run();
-    if (command === 'underline') chain.toggleUnderline().run();
-    if (command === 'strike') chain.toggleStrike().run();
-    if (command === 'highlight') chain.toggleHighlight().run();
-    if (command === 'superscript') chain.toggleSuperscript().run();
-    if (command === 'subscript') chain.toggleSubscript().run();
-    if (command === 'bullet') chain.toggleBulletList().run();
-    if (command === 'ordered') chain.toggleOrderedList().run();
-    if (command === 'checklist') chain.toggleTaskList().run();
-    if (command === 'quote') chain.toggleBlockquote().run();
-    if (command === 'code') chain.toggleCodeBlock().run();
-    if (command === 'align-left') chain.setTextAlign('left').run();
-    if (command === 'align-center') chain.setTextAlign('center').run();
-    if (command === 'align-right') chain.setTextAlign('right').run();
-    if (command === 'align-justify') chain.setTextAlign('justify').run();
-    if (command === 'hr') chain.setHorizontalRule().run();
-    if (command === 'undo') chain.undo().run();
-    if (command === 'redo') chain.redo().run();
-    if (command === 'table') chain.insertTable({ rows: Number(options.rows) || 3, cols: Number(options.cols) || 3, withHeaderRow: true }).run();
-    if (command === 'table-row-add') chain.addRowAfter().run();
-    if (command === 'table-row-del') chain.deleteRow().run();
-    if (command === 'table-col-add') chain.addColumnAfter().run();
-    if (command === 'table-col-del') chain.deleteColumn().run();
-    if (command === 'table-del') chain.deleteTable().run();
+    const run = (fn, label) => {
+      if (typeof fn !== 'function') {
+        console.warn(`Notes command "${label}" is not available in current editor config.`);
+        return false;
+      }
+      fn.call(chain);
+      return true;
+    };
+    const getCurrentImageStyle = () => {
+      const styleRaw = String(editor.getAttributes('image')?.style || '');
+      const width = (styleRaw.match(/(?:^|;)\s*width\s*:\s*([^;]+)/i)?.[1] || '').trim();
+      const widthCss = width ? `width:${width};` : '';
+      return { widthCss };
+    };
+    const setImageStyleWithAlign = (align) => {
+      const { widthCss } = getCurrentImageStyle();
+      const alignCss = align === 'center'
+        ? 'display:block;margin:0 auto;'
+        : align === 'right'
+          ? 'display:block;margin:0 0 0 auto;'
+          : 'display:block;margin:0 auto 0 0;';
+      chain.updateAttributes('image', { style: `${widthCss}${alignCss}` }).run();
+    };
+    const setImageStyleWithWidth = (width) => {
+      const styleRaw = String(editor.getAttributes('image')?.style || '');
+      const alignPart = styleRaw
+        .split(';')
+        .map((part) => part.trim())
+        .filter((part) => part && !/^width\s*:/i.test(part))
+        .join(';');
+      const merged = `width:${width};${alignPart ? `${alignPart};` : ''}`;
+      chain.updateAttributes('image', { style: merged }).run();
+    };
+    if (command === 'h1') run(() => chain.toggleHeading({ level: 1 }).run(), 'h1');
+    if (command === 'h2') run(() => chain.toggleHeading({ level: 2 }).run(), 'h2');
+    if (command === 'h3') run(() => chain.toggleHeading({ level: 3 }).run(), 'h3');
+    if (command === 'bold') run(() => chain.toggleBold().run(), 'bold');
+    if (command === 'italic') run(() => chain.toggleItalic().run(), 'italic');
+    if (command === 'underline') run(() => chain.toggleUnderline().run(), 'underline');
+    if (command === 'strike') run(() => chain.toggleStrike().run(), 'strike');
+    if (command === 'highlight') run(() => chain.toggleHighlight().run(), 'highlight');
+    if (command === 'superscript') run(() => chain.toggleSuperscript().run(), 'superscript');
+    if (command === 'subscript') run(() => chain.toggleSubscript().run(), 'subscript');
+    if (command === 'bullet') run(() => chain.toggleBulletList().run(), 'bullet');
+    if (command === 'ordered') run(() => chain.toggleOrderedList().run(), 'ordered');
+    if (command === 'checklist') run(() => chain.toggleTaskList().run(), 'checklist');
+    if (command === 'quote') run(() => chain.toggleBlockquote().run(), 'quote');
+    if (command === 'code') run(() => chain.toggleCodeBlock().run(), 'code');
+    if (command === 'align-left') run(() => chain.setTextAlign('left').run(), 'align-left');
+    if (command === 'align-center') run(() => chain.setTextAlign('center').run(), 'align-center');
+    if (command === 'align-right') run(() => chain.setTextAlign('right').run(), 'align-right');
+    if (command === 'align-justify') run(() => chain.setTextAlign('justify').run(), 'align-justify');
+    if (command === 'hr') run(() => chain.setHorizontalRule().run(), 'hr');
+    if (command === 'undo') run(() => chain.undo().run(), 'undo');
+    if (command === 'redo') run(() => chain.redo().run(), 'redo');
+    if (command === 'table') run(() => chain.insertTable({ rows: Number(options.rows) || 3, cols: Number(options.cols) || 3, withHeaderRow: true }).run(), 'table');
+    if (command === 'table-row-add') run(() => chain.addRowAfter().run(), 'table-row-add');
+    if (command === 'table-row-del') run(() => chain.deleteRow().run(), 'table-row-del');
+    if (command === 'table-col-add') run(() => chain.addColumnAfter().run(), 'table-col-add');
+    if (command === 'table-col-del') run(() => chain.deleteColumn().run(), 'table-col-del');
+    if (command === 'table-del') run(() => chain.deleteTable().run(), 'table-del');
     if (command === 'link') {
       const previous = editor.getAttributes('link').href || '';
       const href = window.prompt('Link URL', previous);
       if (href === null) return;
-      if (href.trim() === '') chain.extendMarkRange('link').unsetLink().run();
-      else chain.extendMarkRange('link').setLink({ href: href.trim() }).run();
+      if (href.trim() === '') run(() => chain.extendMarkRange('link').unsetLink().run(), 'link-unset');
+      else run(() => chain.extendMarkRange('link').setLink({ href: href.trim() }).run(), 'link-set');
     }
     if (command === 'image') {
       const src = window.prompt('Image URL');
       if (!src) return;
-      chain.setImage({ src: src.trim() }).run();
+      run(() => chain.setImage({ src: src.trim() }).run(), 'image');
     }
-    if (command === 'image-width-25') chain.updateAttributes('image', { width: '25%' }).run();
-    if (command === 'image-width-50') chain.updateAttributes('image', { width: '50%' }).run();
-    if (command === 'image-width-75') chain.updateAttributes('image', { width: '75%' }).run();
-    if (command === 'image-width-100') chain.updateAttributes('image', { width: '100%' }).run();
-    if (command === 'image-align-left') chain.updateAttributes('image', { align: 'left' }).run();
-    if (command === 'image-align-center') chain.updateAttributes('image', { align: 'center' }).run();
-    if (command === 'image-align-right') chain.updateAttributes('image', { align: 'right' }).run();
-    if (command === 'image-delete' && editor.isActive('image')) chain.deleteSelection().run();
+    if (command === 'image-width-25') run(() => setImageStyleWithWidth('25%'), 'image-width-25');
+    if (command === 'image-width-50') run(() => setImageStyleWithWidth('50%'), 'image-width-50');
+    if (command === 'image-width-75') run(() => setImageStyleWithWidth('75%'), 'image-width-75');
+    if (command === 'image-width-100') run(() => setImageStyleWithWidth('100%'), 'image-width-100');
+    if (command === 'image-align-left') run(() => setImageStyleWithAlign('left'), 'image-align-left');
+    if (command === 'image-align-center') run(() => setImageStyleWithAlign('center'), 'image-align-center');
+    if (command === 'image-align-right') run(() => setImageStyleWithAlign('right'), 'image-align-right');
+    if (command === 'image-delete' && editor.isActive('image')) run(() => chain.deleteSelection().run(), 'image-delete');
     if (command === 'math-inline') {
       const latex = window.prompt('Formula (inline)', 'x^2');
       if (!latex) return;
-      chain.insertContent({ type: 'inlineMath', attrs: { latex: latex.trim(), evaluate: 'no', display: 'no' } }).run();
+      if (editor.schema.nodes.inlineMath) {
+        run(() => chain.insertContent({ type: 'inlineMath', attrs: { latex: latex.trim(), evaluate: 'no', display: 'no' } }).run(), 'math-inline');
+      } else {
+        run(() => chain.insertContent(`$${latex.trim()}$`).run(), 'math-inline-fallback');
+      }
     }
     if (command === 'math-block') {
       const latex = window.prompt('Formula (block)', '\\\\sum_{i=1}^{n} x_i');
       if (!latex) return;
-      chain.insertContent({ type: 'inlineMath', attrs: { latex: latex.trim(), evaluate: 'no', display: 'yes' } }).run();
+      if (editor.schema.nodes.inlineMath) {
+        run(() => chain.insertContent({ type: 'inlineMath', attrs: { latex: latex.trim(), evaluate: 'no', display: 'yes' } }).run(), 'math-block');
+      } else {
+        run(() => chain.insertContent(`\n$$${latex.trim()}$$\n`).run(), 'math-block-fallback');
+      }
     }
   }
 
@@ -1536,10 +1627,9 @@
 
   async function submitNoteFromDrawer(forceNew = false) {
     if (!notesInput || !notesSendBtn) return;
-    const editor = await ensureNotesEditor();
-    if (!editor) return;
-    const bodyHtml = editor.getHTML().trim();
-    const bodyText = editor.getText().trim();
+    const editor = notesEditor;
+    const bodyHtml = editor ? editor.getHTML().trim() : notesInput.innerHTML.trim();
+    const bodyText = editor ? editor.getText().trim() : (notesInput.textContent || '').trim();
     if (!bodyHtml || !bodyText) return;
     notesSendBtn.disabled = true;
     const payload = new URLSearchParams();
@@ -1557,12 +1647,23 @@
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: payload
       });
-      const data = await resp.json();
-      if (!resp.ok || !data?.note) return;
-      editor.commands.clearContent(true);
+      let data = null;
+      try {
+        data = await resp.json();
+      } catch (parseError) {
+        console.error('Notes submit response is not JSON.', parseError);
+      }
+      if (!resp.ok || !data?.note) {
+        console.error('Notes submit failed', { status: resp.status, body: data });
+        return;
+      }
+      if (editor) editor.commands.clearContent(true);
+      else notesInput.innerHTML = '';
       editingNoteId = null;
       if (notesSendBtn) notesSendBtn.textContent = 'Add note';
       await loadNotes();
+    } catch (error) {
+      console.error('Notes submit request failed.', error);
     } finally {
       notesSendBtn.disabled = false;
     }
@@ -1574,6 +1675,7 @@
     notesDrawerToggle.setAttribute('aria-expanded', String(willOpen));
     document.body.classList.toggle('notes-drawer-open', willOpen);
     if (willOpen) {
+      await focusNotesInput();
       await loadNotes();
       if (notesFeedScroll) {
         notesFeedScroll.scrollTop = 0;
@@ -1591,6 +1693,11 @@
     document.body.classList.remove('notes-drawer-open');
   });
 
+  notesInput?.addEventListener('click', () => {
+    if (notesEditor || notesEditorReady) return;
+    focusNotesInput();
+  });
+
   notesOnlyCurrentToggle?.addEventListener('change', loadNotes);
   notesSearchInput?.addEventListener('input', () => applyNotesFilters(notesSearchInput.value, notesDateInput?.value || ''));
   notesDateInput?.addEventListener('change', () => applyNotesFilters(notesSearchInput?.value || '', notesDateInput.value));
@@ -1598,18 +1705,22 @@
   window.addEventListener('resize', updateActiveNotesRailDot);
   notesFeed?.addEventListener('click', async (event) => {
     const target = event.target;
-    const editButton = target && target.closest ? target.closest('[data-note-edit]') : null;
-    if (editButton) {
-      const card = editButton.closest('.journal-item');
-      const noteId = card?.dataset?.noteId;
-      if (!noteId) return;
-      const editor = await ensureNotesEditor();
-      if (!editor) return;
+      const editButton = target && target.closest ? target.closest('[data-note-edit]') : null;
+      if (editButton) {
+        const card = editButton.closest('.journal-item');
+        const noteId = card?.dataset?.noteId;
+        if (!noteId) return;
+      const editor = notesEditor;
       const body = card.querySelector('.journal-item-body');
-      editor.commands.setContent(body?.innerHTML || '<p></p>', { emitUpdate: true });
+      if (editor) {
+        editor.commands.setContent(body?.innerHTML || '<p></p>', { emitUpdate: true });
+        editor.commands.focus('end');
+      } else if (notesInput) {
+        notesInput.innerHTML = body?.innerHTML || '';
+        notesInput.focus();
+      }
       editingNoteId = noteId;
       if (notesSendBtn) notesSendBtn.textContent = 'Update note';
-      editor.commands.focus('end');
       return;
     }
     const button = target && target.closest ? target.closest('[data-note-delete]') : null;
@@ -1697,7 +1808,7 @@
     event.preventDefault();
     submitNoteFromDrawer(Boolean(event.shiftKey));
   }, true);
-  ensureNotesEditor();
+  // Lazy init only on first editor interaction to avoid hard dependency on external CDN at page load.
   initNotesTablePicker();
   updateActiveNotesRailDot();
   document.querySelectorAll('[data-notes-cmd]').forEach((btn) => {

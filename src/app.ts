@@ -103,8 +103,9 @@ app.use("/vendor", express.static(path.resolve(process.cwd(), "node_modules")));
 app.use(createHttpsRedirect(db));
 app.use((req, res, next) => {
   res.locals.currentUser = req.user ?? null;
-  res.locals.breadcrumbs = buildBreadcrumbs(db, req);
-  res.locals.unreadNotifications = req.user?.id
+  const wantsHtml = req.accepts(["html", "json"]) === "html";
+  res.locals.breadcrumbs = wantsHtml ? buildBreadcrumbs(db, req) : [];
+  res.locals.unreadNotifications = wantsHtml && req.user?.id
     ? countUnreadNotifications(db, req.user.id)
     : 0;
   next();

@@ -3223,6 +3223,9 @@ body.notes-drawer-open {
   min-height: 220px;
   outline: none;
   line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .notes-compose .journal-editor .ProseMirror h1,

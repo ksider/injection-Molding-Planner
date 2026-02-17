@@ -7,6 +7,12 @@ export function openDb(): Db {
   const dbPath = path.resolve(process.cwd(), process.env.DB_PATH || "im_doe.sqlite");
   const db = new Database(dbPath);
   db.pragma("foreign_keys = ON");
+  // Better read latency for local web app workloads.
+  db.pragma("journal_mode = WAL");
+  db.pragma("synchronous = NORMAL");
+  db.pragma("temp_store = MEMORY");
+  db.pragma("cache_size = -20000");
+  db.pragma("busy_timeout = 3000");
   initDb(db);
   return db;
 }
@@ -428,7 +434,15 @@ function initDb(db: Db) {
     CREATE INDEX IF NOT EXISTS idx_note_versions_note_id ON note_versions(note_id);
     CREATE INDEX IF NOT EXISTS idx_entity_assignments_experiment_id ON entity_assignments(experiment_id);
     CREATE INDEX IF NOT EXISTS idx_entity_assignments_assignee ON entity_assignments(assignee_user_id);
+    CREATE INDEX IF NOT EXISTS idx_entity_assignments_exp_assignee_status ON entity_assignments(experiment_id, assignee_user_id, status);
     CREATE INDEX IF NOT EXISTS idx_notifications_user_status ON notifications(user_id, status, created_at);
+    CREATE INDEX IF NOT EXISTS idx_experiments_owner_archived ON experiments(owner_user_id, archived_at);
+    CREATE INDEX IF NOT EXISTS idx_qual_step_summary_experiment_step ON qual_step_summary(experiment_id, step_number);
+    CREATE INDEX IF NOT EXISTS idx_qual_runs_experiment_id ON qual_runs(experiment_id);
+    CREATE INDEX IF NOT EXISTS idx_qual_run_values_run_id ON qual_run_values(run_id);
+    CREATE INDEX IF NOT EXISTS idx_report_configs_experiment_id ON report_configs(experiment_id);
+    CREATE INDEX IF NOT EXISTS idx_param_definitions_scope_group ON param_definitions(scope, group_label, id);
+    CREATE INDEX IF NOT EXISTS idx_param_definitions_scope_kind_group ON param_definitions(scope, field_kind, group_label, id);
   `);
 
   const adminSettingsCount = db

@@ -4,7 +4,7 @@ import {
   createMachine,
   deleteMachine,
   getMachine,
-  listMachines,
+  listMachinesForLibrary,
   updateMachine
 } from "../repos/machines_repo.js";
 import {
@@ -218,16 +218,7 @@ export function createMachinesRouter(db: Db) {
   const router = express.Router();
 
   router.get("/machines", (_req, res) => {
-    const machines = listMachines(db).map((machine) => {
-      const settings = parseSettings(machine.settings_json);
-      return {
-        ...machine,
-        settings,
-        clamp_force_kN: settings.clamp_force_kN ?? null,
-        injection_pressure_bar: settings.injection_pressure_bar ?? null,
-        intensification_ratio: settings.intensification_ratio ?? null
-      };
-    });
+    const machines = listMachinesForLibrary(db);
     res.render("machine_library", { machines });
   });
 
