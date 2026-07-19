@@ -2,7 +2,6 @@ import "dotenv/config";
 import express from "express";
 import path from "path";
 import helmet from "helmet";
-import { fileURLToPath } from "url";
 import { openDb } from "./db.js";
 import { ensureSeedParams } from "./services/seed.js";
 import { ensureAdminUser } from "./services/admin_seed.js";
@@ -195,14 +194,4 @@ app.use(createNotesRouter(db));
   });
 
   return app;
-}
-
-const currentPath = fileURLToPath(import.meta.url);
-if (process.argv[1] === currentPath) {
-  const app = createApp();
-  const PORT = Number(process.env.PORT || 3000);
-  app.listen(PORT, () => {
-    // eslint-disable-next-line no-console
-    console.log(`IM-DOE Planner running on http://localhost:${PORT}`);
-  });
 }

@@ -1,0 +1,14 @@
+// File generated with Overlay Studio, a code-first UI design editor.
+// Learn more: https://overlay.studio
+
+// Note: you can commit this file to the repo if you want to collaborate with others (and share design system tokens).
+// If not, add `.overlay` to your `.gitignore` file
+{
+  "version": 1,
+
+  // CSS files used to import tokens into the editor.
+  // Use object entries to include/exclude specific variable names or selectors.
+  "tokenFiles": [
+    "./src/public/app.css"
+  ]
+}

@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/app.ts",
+    "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/app.js",
+    "start": "node dist/server.js",
     "test": "node --test --import tsx src/tests/*.test.ts",
     "seed:messages": "tsx src/tools/seed_messages_debug.ts"
   },
