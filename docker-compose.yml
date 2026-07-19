@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  planner:
+    build: .
+    container_name: polymer-planner
+    ports:
+      - "3000:3000" # Если порт занят, измени левое значение, например "8080:3000"
+    volumes:
+      # ВАЖНО: Укажи здесь пути к папкам, где лежат БД и загрузки.
+      # Формат: ./локальная_папка:/app/путь_в_контейнере
+      - ./data:/app/data       # Папка для файла SQLite (например, database.sqlite)
+      - ./uploads:/app/uploads # Папка для загруженных через multer файлов
+    env_file:
+      - .env # Подключение файла переменных окружения (если есть)
+    restart: unless-stopped

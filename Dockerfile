@@ -1,20 +1,23 @@
+# Используем легковесный Debian, чтобы не было проблем с компиляцией better-sqlite3
 FROM node:20-bookworm-slim
 
-# better-sqlite3 is a native module — these tools let it compile
-# during npm install if no ready-made binary matches this system.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 make g++ \
-    && rm -rf /var/lib/apt/lists/*
-
+# Создаем рабочую директорию
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci
+# Копируем файлы зависимостей
+COPY package*.json ./
 
+# Устанавливаем все зависимости (включая devDependencies для сборки TS)
+RUN npm install
+
+# Копируем весь остальной код
 COPY . .
+
+# Компилируем TypeScript (команда "build": "tsc" из package.json)
 RUN npm run build
 
-ENV NODE_ENV=production
+# Открываем порт (предполагаем, что сервер слушает 3000)
 EXPOSE 3000
 
-CMD ["node", "dist/app.js"]
+# Запускаем скомпилированный код
+CMD ["npm", "start"]
