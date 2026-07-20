@@ -34,6 +34,8 @@ desktop.ini
 .pnpm-store
 .yarn
 im_doe.sqlite
+im_doe.sqlite-shm
+im_doe.sqlite-wal
 /vid*
 /info
 plan.md
