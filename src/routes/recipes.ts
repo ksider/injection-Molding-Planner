@@ -1,6 +1,8 @@
 import express from "express";
 import multer from "multer";
 import type { Db } from "../db.js";
+import { FILE_UPLOAD_LIMITER } from "../middleware/rate_limit.js";
+import { recipeFileFilter, fileSizeLimit, handleFileUploadError } from "../middleware/file_upload.js";
 import {
   deleteAllRecipes,
   deleteRecipe,
@@ -11,7 +13,11 @@ import {
 } from "../repos/recipes_repo.js";
 import { importRecipesFromPlainText, importRecipesFromText } from "../services/recipes_service.js";
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: recipeFileFilter,
+  limits: fileSizeLimit
+});
 
 export function createRecipesRouter(db: Db) {
   const router = express.Router();
@@ -32,7 +38,7 @@ export function createRecipesRouter(db: Db) {
     });
   });
 
-  router.post("/recipes/import", upload.single("matrix"), (req, res) => {
+  router.post("/recipes/import", FILE_UPLOAD_LIMITER, upload.single("matrix"), handleFileUploadError, (req, res) => {
     if (!hasRole(req, ["admin", "manager", "engineer"])) {
       return res.status(403).send("Forbidden");
     }

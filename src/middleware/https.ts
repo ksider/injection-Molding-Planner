@@ -5,12 +5,30 @@ import { getAdminSettings } from "../repos/admin_settings_repo.js";
 export function createHttpsRedirect(db: Db) {
   return (req: Request, res: Response, next: NextFunction) => {
     const settings = getAdminSettings(db);
-    if (!settings.require_https) return next();
+    
+    // Always redirect to HTTPS in production
+    const isProduction = process.env.NODE_ENV === "production";
+    const requireHttps = isProduction || settings.require_https === 1;
+    
+    if (!requireHttps) return next();
+    
+    // Check if already HTTPS
     if (req.secure) return next();
+    
+    // Check for forwarded protocol (behind proxy)
     const proto = req.headers["x-forwarded-proto"];
-    if (proto && String(proto).includes("https")) return next();
+    if (proto && String(proto).toLowerCase() === "https") return next();
+    
+    // Validate host header to prevent injection
     const host = req.headers.host;
-    if (!host) return next();
+    if (!host || typeof host !== "string") return next();
+    
+    // Basic host validation - reject invalid characters
+    // Host should be a valid hostname: domain.tld or domain.tld:port
+    if (!/^[a-zA-Z0-9.-]+(:\d+)?$/.test(host)) {
+      return next();
+    }
+    
     return res.redirect(301, `https://${host}${req.originalUrl}`);
   };
 }

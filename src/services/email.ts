@@ -32,12 +32,17 @@ export async function sendTempPasswordEmail(to: string, tempPassword: string) {
     }
   });
 
-  await transporter.sendMail({
-    from: config.from,
-    to,
-    subject: "Your temporary password",
-    text: `Temporary password: ${tempPassword}\nPlease change it after first login.`
-  });
-
-  return true;
+  try {
+    await transporter.sendMail({
+      from: config.from,
+      to,
+      subject: "Your temporary password",
+      text: `Temporary password: ${tempPassword}\nPlease change it after first login.`
+    });
+    return true;
+  } catch (error) {
+    // Don't log the tempPassword in case of error
+    console.error("Failed to send temp password email:", error);
+    return false;
+  }
 }

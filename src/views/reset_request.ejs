@@ -6,6 +6,7 @@
       <div class="auth-error"><%= notice %></div>
     <% } %>
     <form method="post" action="/auth/request-reset" class="pure-form pure-form-stacked">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <label for="email">Email</label>
       <input id="email" name="email" type="email" autocomplete="username" required>
       <button type="submit" class="pure-button pure-button-primary">Request reset</button>

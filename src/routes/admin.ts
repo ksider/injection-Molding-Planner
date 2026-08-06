@@ -2,6 +2,7 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import type { Db } from "../db.js";
+import { ADMIN_ACTION_LIMITER, FILE_UPLOAD_LIMITER, createRateLimiter } from "../middleware/rate_limit.js";
 import { getAdminSettings, updateAllowedDomain, updateRequireHttps } from "../repos/admin_settings_repo.js";
 import { insertAudit } from "../repos/audit_repo.js";
 import {
@@ -159,7 +160,7 @@ export function createAdminRouter(db: Db) {
     return res.redirect("/admin?notice=HTTPS setting updated");
   });
 
-  router.post("/users", async (req, res) => {
+  router.post("/users", ADMIN_ACTION_LIMITER, async (req, res) => {
     const email = normalizeEmail(String(req.body?.email ?? ""));
     const name = String(req.body?.name ?? "").trim() || null;
     const role = String(req.body?.role ?? "").trim() || null;
@@ -193,9 +194,9 @@ export function createAdminRouter(db: Db) {
       const emailed = await sendTempPasswordEmail(email, tempPassword);
       const notice = emailed
         ? "User created and email sent"
-        : `User created. Temporary password: ${tempPassword}`;
+        : "User created. Temporary password sent to user's email.";
       if (wantsJson(req)) {
-        return res.json({ ok: true, message: notice, tempPassword });
+        return res.json({ ok: true, message: notice });
       }
       return res.redirect(`/admin?notice=${encodeURIComponent(notice)}`);
     } catch {
@@ -206,7 +207,7 @@ export function createAdminRouter(db: Db) {
     }
   });
 
-  router.post("/users/:id", (req, res) => {
+  router.post("/users/:id", ADMIN_ACTION_LIMITER, (req, res) => {
     const id = Number(req.params.id);
     const email = normalizeEmail(String(req.body?.email ?? ""));
     const name = String(req.body?.name ?? "").trim() || null;
@@ -231,7 +232,7 @@ export function createAdminRouter(db: Db) {
     return res.redirect("/admin?notice=User updated");
   });
 
-  router.post("/users/:id/ban", (req, res) => {
+  router.post("/users/:id/ban", ADMIN_ACTION_LIMITER, (req, res) => {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {
       if (wantsJson(req)) {
@@ -253,7 +254,7 @@ export function createAdminRouter(db: Db) {
     return res.redirect("/admin?notice=User banned");
   });
 
-  router.post("/users/:id/unban", (req, res) => {
+  router.post("/users/:id/unban", ADMIN_ACTION_LIMITER, (req, res) => {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {
       if (wantsJson(req)) {
@@ -274,7 +275,7 @@ export function createAdminRouter(db: Db) {
     return res.redirect("/admin?notice=User unbanned");
   });
 
-  router.post("/users/:id/force-logout", (req, res) => {
+  router.post("/users/:id/force-logout", ADMIN_ACTION_LIMITER, (req, res) => {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {
       if (wantsJson(req)) {
@@ -295,7 +296,7 @@ export function createAdminRouter(db: Db) {
     return res.redirect("/admin?notice=User logged out");
   });
 
-  router.post("/users/:id/delete", (req, res) => {
+  router.post("/users/:id/delete", ADMIN_ACTION_LIMITER, (req, res) => {
     const id = Number(req.params.id);
     if (Number.isNaN(id)) {
       if (wantsJson(req)) {
@@ -317,7 +318,7 @@ export function createAdminRouter(db: Db) {
     return res.redirect("/admin?notice=User deleted");
   });
 
-  router.post("/experiments/:id/owner", (req, res) => {
+  router.post("/experiments/:id/owner", ADMIN_ACTION_LIMITER, (req, res) => {
     const experimentId = Number(req.params.id);
     const ownerUserId = req.body?.owner_user_id ? Number(req.body.owner_user_id) : null;
     if (!Number.isFinite(experimentId)) {
@@ -345,7 +346,7 @@ export function createAdminRouter(db: Db) {
     return res.redirect("/admin?notice=Experiment owner updated");
   });
 
-  router.post("/experiments/:id/restore", (req, res) => {
+  router.post("/experiments/:id/restore", ADMIN_ACTION_LIMITER, (req, res) => {
     const experimentId = Number(req.params.id);
     const ownerUserId = req.body?.owner_user_id ? Number(req.body.owner_user_id) : null;
     if (!Number.isFinite(experimentId)) {
@@ -367,7 +368,7 @@ export function createAdminRouter(db: Db) {
     return res.redirect("/admin?notice=Experiment restored");
   });
 
-  router.post("/experiments/:id/delete", (req, res) => {
+  router.post("/experiments/:id/delete", ADMIN_ACTION_LIMITER, (req, res) => {
     const experimentId = Number(req.params.id);
     if (!Number.isFinite(experimentId)) {
       if (wantsJson(req)) {

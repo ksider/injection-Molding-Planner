@@ -3,6 +3,19 @@
 
   const normalizeText = (value) => String(value ?? "").trim();
 
+  // CSRF Protection
+  const getCsrfToken = () => {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : '';
+  };
+
+  const csrfToken = getCsrfToken();
+
+  const csrfHeaders = () => {
+    const token = getCsrfToken();
+    return token ? { 'X-CSRF-Token': token } : {};
+  };
+
   root.templateMap = {};
   root.setTemplateMap = (map) => {
     root.templateMap = map || {};
@@ -289,7 +302,8 @@
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
-        "X-Requested-With": "XMLHttpRequest"
+        "X-Requested-With": "XMLHttpRequest",
+        ...csrfHeaders()
       },
       body: params
     });
@@ -305,7 +319,8 @@
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Requested-With": "XMLHttpRequest"
+        "X-Requested-With": "XMLHttpRequest",
+        ...csrfHeaders()
       },
       body: JSON.stringify(data || {})
     });

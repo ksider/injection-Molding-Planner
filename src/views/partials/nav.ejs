@@ -57,6 +57,7 @@
         </a>
       </span>
       <form method="post" action="/auth/logout">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button class="pure-button pure-button-primary" type="submit">Logout</button>
       </form>
     </div>

@@ -10,6 +10,9 @@ import { createAuthRouter } from "./routes/auth.js";
 import { ensureAuthenticated, ensureAdmin } from "./middleware/auth.js";
 import { createAdminRouter } from "./routes/admin.js";
 import { createHttpsRedirect } from "./middleware/https.js";
+import { csrfTokenMiddleware, requireCsrf } from "./middleware/csrf.js";
+import { xssProtectionMiddleware, escapeHtml } from "./middleware/xss.js";
+import { configureCors } from "./middleware/cors.js";
 import { createAuditRouter } from "./routes/audit.js";
 import { createProfileRouter } from "./routes/profile.js";
 import { createTasksRouter } from "./routes/tasks.js";
@@ -35,6 +38,7 @@ export function createApp() {
   ensureSeedParams(db);
   ensureAdminUser(db);
   configureAuth(app, db);
+  configureCors(app);
 
 app.locals.formatNumber = (value: unknown, maxDecimals = 3) => {
   const num = typeof value === "number" ? value : Number(value);
@@ -57,17 +61,8 @@ app.locals.formatNumber = (value: unknown, maxDecimals = 3) => {
   return fixed.replace(/\.?0+$/, "");
 };
 
-const htmlEscapes: Record<string, string> = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-  "'": "&#39;"
-};
-
-function escapeHtml(value: unknown) {
-  return String(value ?? "").replace(/[&<>"']/g, (char) => htmlEscapes[char] ?? char);
-}
+// Using xss middleware functions for consistent HTML escaping
+// escapeHtml, escapeHtmlAttribute, etc. are available via res.locals
 
 app.locals.formatInline = (value: unknown) => {
   const escaped = escapeHtml(value);
@@ -134,10 +129,53 @@ app.set("trust proxy", process.env.TRUST_PROXY === "true");
 
 app.use(
   helmet({
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://api.dicebear.com", "https://cdn.jsdelivr.net", "https://esm.sh", "https://unpkg.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
+        imgSrc: ["'self'", "data:", "https://api.dicebear.com", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        connectSrc: ["'self'"],
+        frameSrc: ["'none'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'none'"]
+      }
+    },
+    crossOriginEmbedderPolicy: false,
+    hsts: {
+      maxAge: 31536000, // 1 year
+      includeSubDomains: true,
+      preload: true
+    },
+    xFrameOptions: { action: "deny" },
+    xContentTypeOptions: true,
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+    permissionsPolicy: {
+      directives: {
+        geolocation: [],
+        microphone: [],
+        camera: [],
+        payment: [],
+        usb: []
+      }
+    }
   })
 );
+
+// Additional security headers
+app.use((_req, res, next) => {
+  // Expect-CT header for Certificate Transparency
+  res.setHeader("Expect-CT", 'max-age=86400, enforce');
+  
+  // Additional security headers
+  res.setHeader("X-Powered-By", "");
+  res.setHeader("Server", "");
+  
+  next();
+});
 
 // Report editor payloads can include embedded images (base64), so default 100kb is too low.
 app.use(express.json({ limit: "15mb" }));
@@ -146,6 +184,8 @@ app.use(express.static(publicPath));
 app.use("/vendor", express.static(path.resolve(process.cwd(), "node_modules")));
 
 app.use(createHttpsRedirect(db));
+app.use(csrfTokenMiddleware);
+app.use(xssProtectionMiddleware);
 app.use((req, res, next) => {
   res.locals.currentUser = req.user ?? null;
   const wantsHtml = req.accepts(["html", "json"]) === "html";
@@ -173,6 +213,7 @@ app.use((req, res, next) => {
 });
 
 app.use(ensureAuthenticated);
+app.use(requireCsrf);
 app.use("/admin", ensureAdmin, createAdminRouter(db));
 app.use("/audit", createAuditRouter(db));
 app.use(createProfileRouter(db));

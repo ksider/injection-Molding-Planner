@@ -1,6 +1,7 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import type { Db } from "../db.js";
+import { PASSWORD_CHANGE_LIMITER } from "../middleware/rate_limit.js";
 import {
   findUserById,
   getUserPasswordHash,
@@ -209,7 +210,7 @@ export function createProfileRouter(db: Db) {
     return res.json({ ok: true, avatar_url: `/avatars/${req.user.id}.svg?ts=${Date.now()}` });
   });
 
-  router.post("/me/password", (req, res) => {
+  router.post("/me/password", PASSWORD_CHANGE_LIMITER, (req, res) => {
     if (!req.user?.id) return res.redirect("/auth/login");
     const current = String(req.body?.current_password ?? "");
     const next = String(req.body?.new_password ?? "");
