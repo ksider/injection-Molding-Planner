@@ -64,7 +64,7 @@ export const recipeFileFilter = (req: Request, file: Express.Multer.File, cb: Fi
   if (result.valid) {
     cb(null, true);
   } else {
-    cb(new Error(result.error), false);
+    cb(new Error(result.error));
   }
 };
 
