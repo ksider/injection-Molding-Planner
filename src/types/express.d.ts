@@ -18,5 +18,7 @@ declare module "express-session" {
     passport?: {
       user?: number;
     };
+    csrfToken?: string;
+    csrfTokenGeneratedAt?: number;
   }
 }

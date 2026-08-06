@@ -12,11 +12,11 @@ const ALLOWED_MIME_TYPES = new Set([
 ]);
 
 // Allowed file extensions
-const ALLOWED_EXTENSIONS = new Set([
+const ALLOWED_EXTENSIONS = [
   ".txt",
   ".csv",
   ".tsv"
-]);
+];
 
 // Maximum file size: 5MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -35,7 +35,7 @@ export function validateFileType(file: Express.Multer.File): { valid: boolean; e
   
   // Check file extension
   const originalName = file.originalname.toLowerCase();
-  const hasValidExtension = ALLOWED_EXTENSIONS.some(ext => originalName.endsWith(ext));
+  const hasValidExtension = ALLOWED_EXTENSIONS.some((ext: string) => originalName.endsWith(ext));
   
   if (!hasValidExtension) {
     return {
@@ -58,7 +58,7 @@ export function validateFileType(file: Express.Multer.File): { valid: boolean; e
 /**
  * Multer file filter for recipe imports
  */
-export const recipeFileFilter: FileFilterCallback = (req, file, cb) => {
+export const recipeFileFilter = (req: Request, file: Express.Multer.File, cb: FileFilterCallback): void => {
   const result = validateFileType(file);
   
   if (result.valid) {

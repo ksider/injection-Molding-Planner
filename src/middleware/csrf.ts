@@ -1,5 +1,11 @@
 import type { Request, Response, NextFunction } from "express";
+import type { Session } from "express-session";
 import crypto from "crypto";
+
+type CsrfSession = Session & {
+  csrfToken?: string;
+  csrfTokenGeneratedAt?: number;
+};
 
 const CSRF_TOKEN_LENGTH = 32;
 const CSRF_TOKEN_NAME = "_csrf";
@@ -12,9 +18,10 @@ export function generateCsrfToken(req: Request): string {
     throw new Error("CSRF protection requires session middleware to be enabled");
   }
   
+  const session = req.session as CsrfSession;
   const token = crypto.randomBytes(CSRF_TOKEN_LENGTH).toString("hex");
-  req.session.csrfToken = token;
-  req.session.csrfTokenGeneratedAt = Date.now();
+  session.csrfToken = token;
+  session.csrfTokenGeneratedAt = Date.now();
   return token;
 }
 
@@ -26,11 +33,12 @@ export function getCsrfToken(req: Request): string {
     throw new Error("CSRF protection requires session middleware to be enabled");
   }
   
-  if (!req.session.csrfToken) {
+  const session = req.session as CsrfSession;
+  if (!session.csrfToken) {
     return generateCsrfToken(req);
   }
   
-  return req.session.csrfToken;
+  return session.csrfToken;
 }
 
 /**
@@ -42,7 +50,8 @@ export function validateCsrfToken(req: Request): boolean {
     return false;
   }
   
-  const sessionToken = req.session.csrfToken as string | undefined;
+  const session = req.session as CsrfSession;
+  const sessionToken = session.csrfToken;
   
   if (!sessionToken) {
     return false;
@@ -53,7 +62,7 @@ export function validateCsrfToken(req: Request): boolean {
   
   // Check body first (forms)
   if (req.body && typeof req.body === "object" && CSRF_TOKEN_NAME in req.body) {
-    requestToken = String(req.body[CSRF_TOKEN_NAME]);
+    requestToken = String((req.body as Record<string, unknown>)[CSRF_TOKEN_NAME]);
   }
   
   // Check query string (for GET requests that shouldn't have state changes, but included for completeness)

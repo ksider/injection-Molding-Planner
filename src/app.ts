@@ -152,16 +152,7 @@ app.use(
     },
     xFrameOptions: { action: "deny" },
     xContentTypeOptions: true,
-    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
-    permissionsPolicy: {
-      directives: {
-        geolocation: [],
-        microphone: [],
-        camera: [],
-        payment: [],
-        usb: []
-      }
-    }
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" }
   })
 );
 
