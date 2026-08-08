@@ -113,12 +113,13 @@ export function createProfileRouter(db: Db) {
     };
   };
 
-  router.get("/avatars/:id.svg", (req, res) => {
+  router.get("/avatars/:id.svg", async (req, res) => {
     if (!req.user?.id) return res.status(401).send("Unauthorized");
     const userId = Number(req.params.id);
     if (!Number.isFinite(userId) || userId <= 0) return res.status(400).send("Invalid user id");
     const user = findUserById(db, userId);
     if (!user) return res.status(404).send("Not found");
+
     const hasPreviewOverride =
       req.query.palette != null ||
       req.query.presentation != null ||
@@ -128,28 +129,55 @@ export function createProfileRouter(db: Db) {
       req.query.facial_hair != null ||
       req.query.eyes != null ||
       req.query.mouth != null;
-    if (hasPreviewOverride && Number(req.user.id) === userId) {
-      const previewStyle = normalizeAvatarStyle(
-        {
-          palette: String(req.query.palette ?? "").trim().toLowerCase() as never,
-          presentation: String(req.query.presentation ?? "").trim().toLowerCase() as never,
-          skinTone: String(req.query.skin_tone ?? "").trim().toLowerCase() as never,
-          hair: String(req.query.hair ?? "").trim().toLowerCase() as never,
-          accessory: String(req.query.accessory ?? "").trim().toLowerCase() as never,
-          facialHair: String(req.query.facial_hair ?? "").trim().toLowerCase() as never,
-          eyes: String(req.query.eyes ?? "").trim().toLowerCase() as never,
-          mouth: String(req.query.mouth ?? "").trim().toLowerCase() as never
-        },
-        `${user.id}:${user.email}:${user.name ?? ""}`
-      );
-      res.set("Cache-Control", "private, no-store");
-      return res.redirect(buildAvatarRedirectUrl(
-        { ...user, avatar_style_json: stringifyAvatarStyle(previewStyle) },
-        previewStyle
-      ));
-    }
+
+    const avatarUrl = hasPreviewOverride && Number(req.user.id) === userId
+      ? buildAvatarRedirectUrl(
+          {
+            ...user,
+            avatar_style_json: stringifyAvatarStyle(
+              normalizeAvatarStyle(
+                {
+                  palette: String(req.query.palette ?? "").trim().toLowerCase() as never,
+                  presentation: String(req.query.presentation ?? "").trim().toLowerCase() as never,
+                  skinTone: String(req.query.skin_tone ?? "").trim().toLowerCase() as never,
+                  hair: String(req.query.hair ?? "").trim().toLowerCase() as never,
+                  accessory: String(req.query.accessory ?? "").trim().toLowerCase() as never,
+                  facialHair: String(req.query.facial_hair ?? "").trim().toLowerCase() as never,
+                  eyes: String(req.query.eyes ?? "").trim().toLowerCase() as never,
+                  mouth: String(req.query.mouth ?? "").trim().toLowerCase() as never
+                },
+                `${user.id}:${user.email}:${user.name ?? ""}`
+              )
+            )
+          },
+          normalizeAvatarStyle(
+            {
+              palette: String(req.query.palette ?? "").trim().toLowerCase() as never,
+              presentation: String(req.query.presentation ?? "").trim().toLowerCase() as never,
+              skinTone: String(req.query.skin_tone ?? "").trim().toLowerCase() as never,
+              hair: String(req.query.hair ?? "").trim().toLowerCase() as never,
+              accessory: String(req.query.accessory ?? "").trim().toLowerCase() as never,
+              facialHair: String(req.query.facial_hair ?? "").trim().toLowerCase() as never,
+              eyes: String(req.query.eyes ?? "").trim().toLowerCase() as never,
+              mouth: String(req.query.mouth ?? "").trim().toLowerCase() as never
+            },
+            `${user.id}:${user.email}:${user.name ?? ""}`
+          )
+        )
+      : buildAvatarRedirectUrl(user);
+
     res.set("Cache-Control", "private, no-store");
-    return res.redirect(buildAvatarRedirectUrl(user));
+    try {
+      const avatarResponse = await fetch(avatarUrl);
+      if (!avatarResponse.ok) {
+        return res.status(502).send("Unable to generate avatar");
+      }
+      const avatarSvg = await avatarResponse.text();
+      res.type("image/svg+xml; charset=utf-8");
+      return res.send(avatarSvg);
+    } catch {
+      return res.status(502).send("Unable to generate avatar");
+    }
   });
 
   router.get("/me", (req, res) => {
