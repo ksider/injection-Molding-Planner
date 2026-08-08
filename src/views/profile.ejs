@@ -35,6 +35,7 @@
         <div class="auth-error"><%= notice %></div>
       <% } %>
       <form class="pure-form pure-form-stacked" action="/me/name" method="post">
+        <%- include('partials/csrf_token') %>
         <label for="name">Name</label>
         <input id="name" name="name" type="text" value="<%= currentUser?.name ?? '' %>" placeholder="Your name">
         <button class="pure-button pure-button-primary" type="submit">Update name</button>
@@ -45,6 +46,7 @@
           <span class="small-note">Changes apply automatically.</span>
         </div>
         <form class="pure-form pure-form-stacked profile-avatar-config" action="/me/avatar-style" method="post" data-avatar-style-form>
+          <%- include('partials/csrf_token') %>
           <div class="profile-avatar-config-top">
             <img class="profile-avatar profile-avatar-lg" id="profileAvatarPreview" src="<%= avatarUrl(currentUser?.id) %>" alt="Avatar preview">
             <div class="small-note" id="profileAvatarStatus">Changes apply automatically.</div>
@@ -214,6 +216,7 @@
         </form>
       </section>
       <form class="pure-form pure-form-stacked" action="/me/password" method="post" style="margin-top: 1rem;">
+        <%- include('partials/csrf_token') %>
         <label for="current_password">Current password</label>
         <input id="current_password" name="current_password" type="password" autocomplete="current-password" required>
         <label for="new_password">New password</label>
@@ -802,11 +805,14 @@
       });
       avatarStatus.textContent = 'Saving...';
       try {
+        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+        const csrfHeader = csrfMeta ? String(csrfMeta.getAttribute('content') || '') : '';
         const resp = await fetch('/me/avatar-style.json', {
           method: 'POST',
           headers: {
             'Accept': 'application/json',
-            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+            'X-CSRF-Token': csrfHeader
           },
           body: body.toString()
         });
